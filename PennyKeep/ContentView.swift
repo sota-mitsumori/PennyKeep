@@ -1,24 +1,44 @@
-//
-//  ContentView.swift
-//  PennyKeep
-//
-//  Created by Sota Mitsumori on 2025/02/07.
-//
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            HomeView()
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Home")
+                }
+            
+            ExpensesView()
+                .tabItem {
+                    Image(systemName: "creditcard.fill")
+                    Text("Expenses")
+                }
+            
+            SettingsView()
+                .tabItem {
+                    Image(systemName: "gear")
+                    Text("Settings")
+                }
         }
-        .padding()
     }
 }
 
-#Preview {
-    ContentView()
+struct HomeView: View {
+    var body: some View {
+        NavigationView {
+            Text("A penny saved is a penny earned!")
+                .navigationTitle("Home")
+        }
+    }
 }
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+            .environmentObject(CategoryManager())
+            .environmentObject(ExpenseStore())
+    }
+}
+
+

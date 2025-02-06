@@ -1,17 +1,15 @@
-//
-//  PennyKeepApp.swift
-//  PennyKeep
-//
-//  Created by Sota Mitsumori on 2025/02/07.
-//
-
 import SwiftUI
 
 @main
 struct PennyKeepApp: App {
+    @StateObject private var expenseStore = ExpenseStore()
+    @StateObject private var categoryManager = CategoryManager()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(categoryManager)
+                .environmentObject(expenseStore)
         }
     }
 }
