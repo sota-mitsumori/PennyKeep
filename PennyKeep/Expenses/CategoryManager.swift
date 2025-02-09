@@ -2,47 +2,83 @@ import Foundation
 import SwiftUI
 
 class CategoryManager: ObservableObject {
-    @Published var categories: [String] = [] {
+    @Published var expenseCategories: [String] = [] {
         didSet {
-            saveCategories()
+            saveExpenseCategories()
         }
     }
     
-    private let categoriesKey = "categories"
+    @Published var incomeCategories: [String] = [] {
+        didSet {
+            saveIncomeCategories()
+        }
+    }
+    
+    private let expenseCategoriesKey = "expenseCategories"
+    private let incomeCategoriesKey = "incomeCategories"
     
     init() {
         loadCategories()
     }
     
     private func loadCategories() {
-        if let data = UserDefaults.standard.data(forKey: categoriesKey),
-           let savedCategories = try? JSONDecoder().decode([String].self, from: data) {
-            categories = savedCategories
+        if let data = UserDefaults.standard.data(forKey: expenseCategoriesKey),
+           let savedExpense = try? JSONDecoder().decode([String].self, from: data) {
+            expenseCategories = savedExpense
         } else {
             // If no saved data exists, initialize with default categories.
-            categories = ["Transportation", "Grocery", "Entertainment", "Other"]
+            expenseCategories = ["Transportation", "Grocery", "Entertainment", "Other"]
+        }
+        
+        if let data = UserDefaults.standard.data(forKey: incomeCategoriesKey),
+           let savedExpense = try? JSONDecoder().decode([String].self, from: data) {
+            incomeCategories = savedExpense
+        } else {
+            // If no saved data exists, initialize with default categories.
+            incomeCategories = ["Salary", "Investments", "Gifts", "Other"]
         }
     }
     
-    private func saveCategories() {
-        if let encoded = try? JSONEncoder().encode(categories) {
-            UserDefaults.standard.set(encoded, forKey: categoriesKey)
+    private func saveExpenseCategories() {
+        if let encoded = try? JSONEncoder().encode(expenseCategories) {
+            UserDefaults.standard.set(encoded, forKey: expenseCategoriesKey)
         }
     }
     
-    // Methods for managing the categories.
-    func add(category: String) {
+    private func saveIncomeCategories() {
+        if let encoded = try? JSONEncoder().encode(incomeCategories) {
+            UserDefaults.standard.set(encoded, forKey: incomeCategoriesKey)
+        }
+    }
+    
+    // Methods for managing expense categories.
+    func addExpenseCategory(_ category: String) {
         let trimmed = category.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        categories.append(trimmed)
+        expenseCategories.append(trimmed)
     }
     
-    func delete(at offsets: IndexSet) {
-        categories.remove(atOffsets: offsets)
+    func deleteExpenseCategory(at offsets: IndexSet) {
+        expenseCategories.remove(atOffsets: offsets)
     }
     
-    func move(from source: IndexSet, to destination: Int) {
-        categories.move(fromOffsets: source, toOffset: destination)
+    func moveExpenseCategory(from source: IndexSet, to destination: Int) {
+        expenseCategories.move(fromOffsets: source, toOffset: destination)
+    }
+    
+    // Methods for managing income categories.
+    func addIncomeCategory(_ category: String) {
+        let trimmed = category.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        incomeCategories.append(trimmed)
+    }
+    
+    func deleteIncomeCategory(at offsets: IndexSet) {
+        incomeCategories.remove(atOffsets: offsets)
+    }
+    
+    func moveIncomeCategory(from source: IndexSet, to destination: Int) {
+        incomeCategories.move(fromOffsets: source, toOffset: destination)
     }
 }
 

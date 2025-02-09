@@ -3,27 +3,38 @@ import SwiftUI
 struct CategoryManagerView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var categoryManager: CategoryManager
+    var transactionType: TransactionType
     @State private var newCategory: String = ""
     
     var body: some View {
         NavigationView {
             VStack {
                 List {
-                    ForEach(categoryManager.categories, id: \.self) { category in
-                        Text(category)
+                    if transactionType == .expense {
+                       ForEach(categoryManager.expenseCategories, id: \.self) { category in
+                           Text(category)
+                       }
+                       .onDelete(perform: categoryManager.deleteExpenseCategory)
+                       .onMove(perform: categoryManager.moveExpenseCategory)
+                    } else {
+                       ForEach(categoryManager.incomeCategories, id: \.self) { category in
+                           Text(category)
+                       }
+                       .onDelete(perform: categoryManager.deleteIncomeCategory)
+                       .onMove(perform: categoryManager.moveIncomeCategory)
                     }
-                    .onDelete(perform: categoryManager.delete)
-                    .onMove(perform: categoryManager.move)
                 }
                 
                 HStack {
                     TextField("New Category", text: $newCategory)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    Button(action: {
-                        categoryManager.add(category: newCategory)
+                    Button("Add") {
+                        if transactionType == .expense {
+                            categoryManager.addExpenseCategory(newCategory)
+                        } else {
+                            categoryManager.addIncomeCategory(newCategory)
+                        }
                         newCategory = ""
-                    }) {
-                        Text("Add")
                     }
                     .disabled(newCategory.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
@@ -39,7 +50,7 @@ struct CategoryManagerView: View {
 
 struct CategoryManagerView_Previews: PreviewProvider {
     static var previews: some View {
-        CategoryManagerView()
+        CategoryManagerView(transactionType: .expense)
             .environmentObject(CategoryManager())
     }
 }

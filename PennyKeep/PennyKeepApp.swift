@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct PennyKeepApp: App {
-    @StateObject private var expenseStore = ExpenseStore()
+    @StateObject private var expenseStore = TransactionStore()
     @StateObject private var categoryManager = CategoryManager()
     
     var body: some Scene {
