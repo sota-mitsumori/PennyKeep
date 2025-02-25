@@ -3,7 +3,9 @@ import SwiftUI
 struct TransactionsView: View {
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var appSettings: AppSettings
-    @State private var isPresentingAddTransaction = false
+    @State private var transactionToEdit: Transaction? = nil
+    @State private var isEditing: Bool = false
+    @State private var isPresentingAddTransaction: Bool = false
     @State private var selectedDate: Date = Date()
 
     // Filter transactions based on the selected date.
@@ -44,6 +46,25 @@ struct TransactionsView: View {
                                     .foregroundColor(transaction.type == .income ? .green : .red)
                                 
                             }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                //Delete action
+                                Button(role: .destructive) {
+                                    if let index = transactionStore.transactions.firstIndex(where: {$0.id == transaction.id}) {
+                                        transactionStore.transactions.remove(at: index)
+                                    }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                
+                                //Edit action
+                                Button {
+                                    transactionToEdit = transaction
+                                    isPresentingAddTransaction = true
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                            }
                         }
                     }
                     .listStyle(InsetGroupedListStyle())
@@ -53,6 +74,7 @@ struct TransactionsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
+                        transactionToEdit = nil
                         isPresentingAddTransaction = true
                     }) {
                         Image(systemName: "plus")
@@ -60,7 +82,8 @@ struct TransactionsView: View {
                 }
             }
             .sheet(isPresented: $isPresentingAddTransaction) {
-                AddTransactionView()
+                AddTransactionView(transactionToEdit: transactionToEdit)
+                    .id(transactionToEdit? .id)
                     .environmentObject(transactionStore)
                     .environmentObject(CategoryManager())
             }

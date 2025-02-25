@@ -4,10 +4,12 @@ struct AddTransactionView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var categoryManager: CategoryManager
+    
+    var transactionToEdit: Transaction?
 
     @State private var title: String = ""
     @State private var amount: String = ""
-    @State private var selectedCategory = "Transportation" // default category
+    @State private var selectedCategory = ""
     @State private var transactionDate: Date = Date() // selected date
     @State private var transactionType: TransactionType = .expense // choose expense or income
     @State private var isPresentingCategoryManager = false
@@ -60,11 +62,21 @@ struct AddTransactionView: View {
                     .foregroundColor(.blue)
                 }
             }
-            .navigationTitle("Add Transaction")
+            .navigationTitle(transactionToEdit == nil ? "Add Transaction" : "Edit Transaction")
             .navigationBarItems(
                 leading: Button("Cancel") { dismiss() },
                 trailing: Button("Save") {
-                    if let amountValue = Double(amount), !title.isEmpty {
+                    guard let amountValue = Double(amount), !title.isEmpty else { return }
+                    if let editingTransaction = transactionToEdit,
+                       let index = transactionStore.transactions.firstIndex(where: { $0.id == editingTransaction.id }) {
+                        // Update the existing transaction.
+                        transactionStore.transactions[index].title = title
+                        transactionStore.transactions[index].amount = amountValue
+                        transactionStore.transactions[index].date = transactionDate
+                        transactionStore.transactions[index].category = selectedCategory
+                        transactionStore.transactions[index].type = transactionType
+                    } else {
+                        // Create a new transaction.
                         let newTransaction = Transaction(
                             title: title,
                             amount: amountValue,
@@ -82,11 +94,20 @@ struct AddTransactionView: View {
                     .environmentObject(categoryManager)
             }
             .onAppear {
-                // Initialize the selected category based on the default transaction type.
-                if transactionType == .expense {
-                    selectedCategory = categoryManager.expenseCategories.first ?? ""
+                // If editing, initialize state with the existing transaction values.
+                if let transaction = transactionToEdit {
+                    title = transaction.title
+                    amount = String(transaction.amount)
+                    transactionDate = transaction.date
+                    transactionType = transaction.type
+                    selectedCategory = transaction.category
                 } else {
-                    selectedCategory = categoryManager.incomeCategories.first ?? ""
+                    // Set default category based on transaction type.
+                    if transactionType == .expense {
+                        selectedCategory = categoryManager.expenseCategories.first ?? ""
+                    } else {
+                        selectedCategory = categoryManager.incomeCategories.first ?? ""
+                    }
                 }
             }
         }
