@@ -2,8 +2,9 @@ import SwiftUI
 
 struct TransactionsView: View {
     @EnvironmentObject var transactionStore: TransactionStore
+    @EnvironmentObject var appSettings: AppSettings
     @State private var isPresentingAddTransaction = false
-    @State private var selectedDate: Date = Date() // Filter date from the calendar
+    @State private var selectedDate: Date = Date()
 
     // Filter transactions based on the selected date.
     var filteredTransactions: [Transaction] {
@@ -32,19 +33,16 @@ struct TransactionsView: View {
                                 VStack(alignment: .leading) {
                                     Text(transaction.title)
                                         .font(.headline)
-                                    Text(String(format: "$%.2f", transaction.amount))
+                                    Text(transaction.category)
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                 }
                                 Spacer()
-                                // Color-code based on type: green for income, red for expense.
-                                if transaction.type == .income {
-                                    Text("Income")
-                                        .foregroundColor(.green)
-                                } else {
-                                    Text("Expense")
-                                        .foregroundColor(.red)
-                                }
+                                // Display amount with a + for income and - for expense.
+                                Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
+                                    .font(.headline)
+                                    .foregroundColor(transaction.type == .income ? .green : .red)
+                                
                             }
                         }
                     }

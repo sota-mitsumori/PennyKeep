@@ -30,6 +30,7 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
             .environmentObject(CategoryManager())
             .environmentObject(TransactionStore())
+            .environmentObject(AppSettings())
     }
 }
 

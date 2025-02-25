@@ -2,14 +2,16 @@ import SwiftUI
 
 @main
 struct PennyKeepApp: App {
-    @StateObject private var expenseStore = TransactionStore()
+    @StateObject private var transactionStore = TransactionStore()
     @StateObject private var categoryManager = CategoryManager()
+    @StateObject private var appSettings = AppSettings()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(categoryManager)
-                .environmentObject(expenseStore)
+                .environmentObject(transactionStore)
+                .environmentObject(appSettings)
         }
     }
 }
