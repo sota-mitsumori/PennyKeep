@@ -5,12 +5,19 @@ struct AddTransactionView: View {
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var categoryManager: CategoryManager
     
+    var defaultDate: Date = Date()
     var transactionToEdit: Transaction?
+    
+    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil) {
+        self.defaultDate = defaultDate
+        self.transactionToEdit = transactionToEdit
+        _transactionDate = State(initialValue: defaultDate)
+    }
 
     @State private var title: String = ""
     @State private var amount: String = ""
     @State private var selectedCategory = ""
-    @State private var transactionDate: Date = Date() // selected date
+    @State private var transactionDate: Date
     @State private var transactionType: TransactionType = .expense // choose expense or income
     @State private var isPresentingCategoryManager = false
 
@@ -108,6 +115,7 @@ struct AddTransactionView: View {
                     } else {
                         selectedCategory = categoryManager.incomeCategories.first ?? ""
                     }
+                    transactionDate = defaultDate
                 }
             }
         }

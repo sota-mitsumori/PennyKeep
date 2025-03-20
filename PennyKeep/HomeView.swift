@@ -26,7 +26,7 @@ struct HomeView: View {
     
     var recentTransactions: [Transaction] {
         let sorted = transactionStore.transactions.sorted { $0.date > $1.date }
-        return Array(sorted.prefix(5))
+        return Array(sorted.prefix(10))
     }
 
     
@@ -45,15 +45,25 @@ struct HomeView: View {
                             VStack(alignment: .leading) {
                                 Text("Income")
                                     .font(.headline)
-                                Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", incomeTotal))")
-                                    .foregroundColor(.green)
+                                if appSettings.selectedCurrency == "¥" {
+                                    Text("¥\(String(format:"%.0f", incomeTotal))")
+                                        .foregroundColor(.green)
+                                } else {
+                                    Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", incomeTotal))")
+                                        .foregroundColor(.green)
+                                }
                             }
                             Spacer()
                             VStack(alignment: .leading) {
                                 Text("Expense")
                                     .font(.headline)
-                                Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", expenseTotal))")
-                                    .foregroundColor(.red)
+                                if appSettings.selectedCurrency == "¥" {
+                                    Text("¥\(String(format:"%.0f", expenseTotal))")
+                                        .foregroundColor(.red)
+                                } else {
+                                    Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", expenseTotal))")
+                                        .foregroundColor(.red)
+                                }
                             }
                         }
                     }
@@ -79,9 +89,15 @@ struct HomeView: View {
                                         .foregroundColor(.secondary)
                                 }
                                 Spacer()
-                                Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
-                                    .font(.headline)
-                                    .foregroundColor(transaction.type == .income ? .green : .red)
+                                if appSettings.selectedCurrency == "¥" {
+                                    Text("\(transaction.type == .income ? "+" : "-")¥\(String(format: "%.0f", transaction.amount))")
+                                        .font(.headline)
+                                        .foregroundColor(transaction.type == .income ? .green : .red)
+                                } else {
+                                    Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
+                                        .font(.headline)
+                                        .foregroundColor(transaction.type == .income ? .green : .red)
+                                }
                             }
                             .padding(.vertical, 4)
                         }

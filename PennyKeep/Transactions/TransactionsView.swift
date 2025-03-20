@@ -41,9 +41,15 @@ struct TransactionsView: View {
                                 }
                                 Spacer()
                                 // Display amount with a + for income and - for expense.
-                                Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
-                                    .font(.headline)
-                                    .foregroundColor(transaction.type == .income ? .green : .red)
+                                if appSettings.selectedCurrency == "¥" {
+                                    Text("\(transaction.type == .income ? "+" : "-")¥\(String(format: "%.0f", transaction.amount))")
+                                        .font(.headline)
+                                        .foregroundColor(transaction.type == .income ? .green : .red)
+                                } else {
+                                    Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
+                                        .font(.headline)
+                                        .foregroundColor(transaction.type == .income ? .green : .red)
+                                }
                                 
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -82,7 +88,7 @@ struct TransactionsView: View {
                 }
             }
             .sheet(isPresented: $isPresentingAddTransaction) {
-                AddTransactionView(transactionToEdit: transactionToEdit)
+                AddTransactionView(defaultDate: selectedDate, transactionToEdit: transactionToEdit)
                     .id(transactionToEdit? .id)
                     .environmentObject(transactionStore)
                     .environmentObject(CategoryManager())
@@ -97,4 +103,3 @@ struct TransactionsView_Previews: PreviewProvider {
             .environmentObject(TransactionStore())
     }
 }
-
