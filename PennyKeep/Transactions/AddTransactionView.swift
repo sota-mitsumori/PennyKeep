@@ -7,10 +7,12 @@ struct AddTransactionView: View {
     
     var defaultDate: Date = Date()
     var transactionToEdit: Transaction?
+    let shouldScanReceipt: Bool
     
-    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil) {
+    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, shouldScanReceipt: Bool = false) {
         self.defaultDate = defaultDate
         self.transactionToEdit = transactionToEdit
+        self.shouldScanReceipt = shouldScanReceipt
         _transactionDate = State(initialValue: defaultDate)
     }
 
@@ -20,6 +22,7 @@ struct AddTransactionView: View {
     @State private var transactionDate: Date
     @State private var transactionType: TransactionType = .expense // choose expense or income
     @State private var isPresentingCategoryManager = false
+    @State private var showReceiptScanner: Bool = false
 
     var body: some View {
         NavigationView {
@@ -99,8 +102,25 @@ struct AddTransactionView: View {
             .sheet(isPresented: $isPresentingCategoryManager) {
                 CategoryManagerView(transactionType: transactionType)
                     .environmentObject(categoryManager)
+                
             }
+            
+            .sheet(isPresented: $showReceiptScanner) {
+                ReceiptScannerView { scannedTitle, scannedAmount, scannedDate in
+                    // Update the transaction fields with scanned data
+                    title = scannedTitle
+                    amount = scannedAmount
+                    transactionDate = scannedDate
+                    showReceiptScanner = false
+                }
+            }
+            
             .onAppear {
+                if shouldScanReceipt {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showReceiptScanner = true
+                    }
+                }
                 // If editing, initialize state with the existing transaction values.
                 if let transaction = transactionToEdit {
                     title = transaction.title
@@ -117,7 +137,12 @@ struct AddTransactionView: View {
                     }
                     transactionDate = defaultDate
                 }
+                
             }
+            // Hidden preloader to warm up AddTransactionView
+            AddTransactionView(defaultDate: defaultDate, transactionToEdit: nil, shouldScanReceipt: false)
+                .frame(width: 0, height: 0)
+                .opacity(0)
         }
     }
 }
@@ -131,4 +156,3 @@ struct AddTransactionView_Previews: PreviewProvider {
             .environmentObject(CategoryManager())
     }
 }
-

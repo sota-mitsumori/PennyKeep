@@ -7,6 +7,8 @@ struct TransactionsView: View {
     @State private var isEditing: Bool = false
     @State private var isPresentingAddTransaction: Bool = false
     @State private var selectedDate: Date = Date()
+    @State private var shouldScanReceipt: Bool = false
+    @State private var isPresentingReceiptScanner: Bool = false
 
     // Filter transactions based on the selected date.
     var filteredTransactions: [Transaction] {
@@ -75,6 +77,11 @@ struct TransactionsView: View {
                     }
                     .listStyle(InsetGroupedListStyle())
                 }
+                
+                // Hidden preloader to warm up AddTransactionView
+                AddTransactionView(defaultDate: selectedDate, transactionToEdit: nil, shouldScanReceipt: false)
+                    .frame(width: 0, height: 0)
+                    .opacity(0)
             }
             .navigationTitle("Transactions")
             .toolbar {
@@ -82,14 +89,25 @@ struct TransactionsView: View {
                     Button(action: {
                         transactionToEdit = nil
                         isPresentingAddTransaction = true
+                        shouldScanReceipt = false
                     }) {
                         Image(systemName: "plus")
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        transactionToEdit = nil
+                        isPresentingAddTransaction = true
+                        shouldScanReceipt = true
+                    }) {
+                        Image(systemName: "camera.fill")
+                    }
+                    .tint(.blue)
+                }
             }
             .sheet(isPresented: $isPresentingAddTransaction) {
-                AddTransactionView(defaultDate: selectedDate, transactionToEdit: transactionToEdit)
-                    .id(transactionToEdit? .id)
+                AddTransactionView(defaultDate: selectedDate, transactionToEdit: transactionToEdit, shouldScanReceipt: shouldScanReceipt)
+                    .id(UUID())
                     .environmentObject(transactionStore)
                     .environmentObject(CategoryManager())
             }
