@@ -116,7 +116,7 @@ struct AddTransactionView: View {
             }
             
             .onAppear {
-                if shouldScanReceipt {
+                if shouldScanReceipt && transactionToEdit == nil{
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         showReceiptScanner = true
                     }
@@ -139,10 +139,6 @@ struct AddTransactionView: View {
                 }
                 
             }
-            // Hidden preloader to warm up AddTransactionView
-            AddTransactionView(defaultDate: defaultDate, transactionToEdit: nil, shouldScanReceipt: false)
-                .frame(width: 0, height: 0)
-                .opacity(0)
         }
     }
 }
