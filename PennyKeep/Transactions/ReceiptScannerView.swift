@@ -57,7 +57,7 @@ struct ReceiptScannerView: UIViewControllerRepresentable {
                         group.leave()
                     }
                     request.recognitionLevel = .accurate
-                    request.recognitionLanguages = ["ja-JP"]
+                    request.automaticallyDetectsLanguage = true
                     
                     DispatchQueue.global(qos: .userInitiated).async {
                         do {
