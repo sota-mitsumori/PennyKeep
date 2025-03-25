@@ -7,13 +7,17 @@ struct AddTransactionView: View {
     
     var defaultDate: Date = Date()
     var transactionToEdit: Transaction?
-    let shouldScanReceipt: Bool
+    @State private var scannedTitle: String?
+    @State private var scannedAmount: String?
+    @State private var scannedDate: Date?
     
-    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, shouldScanReceipt: Bool = false) {
+    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedTitle: String? = nil, scannedAmount: String? = nil, scannedDate: Date? = nil) {
         self.defaultDate = defaultDate
         self.transactionToEdit = transactionToEdit
-        self.shouldScanReceipt = shouldScanReceipt
-        _transactionDate = State(initialValue: defaultDate)
+        _scannedTitle = State(initialValue: scannedTitle)
+        _scannedAmount = State(initialValue: scannedAmount)
+        _scannedDate = State(initialValue: scannedDate)
+            _transactionDate = State(initialValue: scannedDate ?? defaultDate)
     }
 
     @State private var title: String = ""
@@ -22,7 +26,6 @@ struct AddTransactionView: View {
     @State private var transactionDate: Date
     @State private var transactionType: TransactionType = .expense // choose expense or income
     @State private var isPresentingCategoryManager = false
-    @State private var showReceiptScanner: Bool = false
 
     var body: some View {
         NavigationView {
@@ -96,6 +99,9 @@ struct AddTransactionView: View {
                         )
                         transactionStore.transactions.append(newTransaction)
                     }
+                    scannedTitle = nil
+                    scannedAmount = nil
+                    scannedDate = nil
                     dismiss()
                 }
             )
@@ -105,23 +111,12 @@ struct AddTransactionView: View {
                 
             }
             
-            .sheet(isPresented: $showReceiptScanner) {
-                ReceiptScannerView { scannedTitle, scannedAmount, scannedDate in
-                    // Update the transaction fields with scanned data
-                    title = scannedTitle
-                    amount = scannedAmount
-                    transactionDate = scannedDate
-                    showReceiptScanner = false
-                }
-            }
             
             .onAppear {
-                if shouldScanReceipt && transactionToEdit == nil{
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showReceiptScanner = true
-                    }
-                }
-                // If editing, initialize state with the existing transaction values.
+                print("scannedTitle: \(scannedTitle ?? "nil")")
+                print("scannedAmount: \(scannedAmount ?? "nil")")
+                print("scannedDate: \(scannedDate?.description ?? "nil")")
+                
                 if let transaction = transactionToEdit {
                     title = transaction.title
                     amount = String(transaction.amount)
@@ -129,13 +124,27 @@ struct AddTransactionView: View {
                     transactionType = transaction.type
                     selectedCategory = transaction.category
                 } else {
+                    // For new transactions, if scanned data is available, use them
+                    if let scannedTitle = scannedTitle {
+                        title = scannedTitle
+                    }
+                    if let scannedAmount = scannedAmount {
+                        amount = scannedAmount
+                    }
+                    if let scannedDate = scannedDate {
+                        transactionDate = scannedDate
+                    } else {
+                        transactionDate = defaultDate
+                    }
+                
+                    
                     // Set default category based on transaction type.
                     if transactionType == .expense {
                         selectedCategory = categoryManager.expenseCategories.first ?? ""
                     } else {
                         selectedCategory = categoryManager.incomeCategories.first ?? ""
                     }
-                    transactionDate = defaultDate
+//                    transactionDate = defaultDate
                 }
                 
             }

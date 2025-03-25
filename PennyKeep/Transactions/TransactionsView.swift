@@ -7,8 +7,8 @@ struct TransactionsView: View {
     @State private var isEditing: Bool = false
     @State private var isPresentingAddTransaction: Bool = false
     @State private var selectedDate: Date = Date()
-    @State private var shouldScanReceipt: Bool = false
     @State private var isPresentingReceiptScanner: Bool = false
+    @State private var scannedData: (title: String, amount: String, date: Date)? = nil
 
     // Filter transactions based on the selected date.
     var filteredTransactions: [Transaction] {
@@ -77,11 +77,6 @@ struct TransactionsView: View {
                     }
                     .listStyle(InsetGroupedListStyle())
                 }
-                
-                // Hidden preloader to warm up AddTransactionView
-                AddTransactionView(defaultDate: selectedDate, transactionToEdit: nil, shouldScanReceipt: false)
-                    .frame(width: 0, height: 0)
-                    .opacity(0)
             }
             .navigationTitle("Transactions")
             .toolbar {
@@ -89,7 +84,6 @@ struct TransactionsView: View {
                     Button(action: {
                         transactionToEdit = nil
                         isPresentingAddTransaction = true
-                        shouldScanReceipt = false
                     }) {
                         Image(systemName: "plus")
                     }
@@ -97,20 +91,36 @@ struct TransactionsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         transactionToEdit = nil
-                        isPresentingAddTransaction = true
-                        shouldScanReceipt = true
+                        isPresentingReceiptScanner = true
                     }) {
                         Image(systemName: "camera.fill")
                     }
                     .tint(.blue)
                 }
             }
-            .sheet(isPresented: $isPresentingAddTransaction) {
-                AddTransactionView(defaultDate: selectedDate, transactionToEdit: transactionToEdit, shouldScanReceipt: shouldScanReceipt)
-                    .id(UUID())
-                    .environmentObject(transactionStore)
-                    .environmentObject(CategoryManager())
+            .sheet(isPresented: $isPresentingReceiptScanner) {
+                ReceiptScannerView { scannedTitle, scannedAmount, scannedDate in
+                    scannedData = (scannedTitle, scannedAmount, scannedDate)
+                    isPresentingReceiptScanner = false
+                    isPresentingAddTransaction = true
+                }
             }
+            
+            .sheet(isPresented: $isPresentingAddTransaction) {
+                
+                if let data = scannedData {
+                    AddTransactionView(defaultDate: selectedDate, transactionToEdit: transactionToEdit, scannedTitle: data.title, scannedAmount: data.amount, scannedDate: data.date)
+                        .id(UUID())
+                        .environmentObject(transactionStore)
+                        .environmentObject(CategoryManager())
+                } else {
+                    AddTransactionView(defaultDate: selectedDate, transactionToEdit: transactionToEdit)
+                        .id(UUID())
+                        .environmentObject(transactionStore)
+                        .environmentObject(CategoryManager())
+                }
+            }
+            
         }
     }
 }

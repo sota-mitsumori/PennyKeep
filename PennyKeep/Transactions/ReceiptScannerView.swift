@@ -63,7 +63,7 @@ struct ReceiptScannerView: UIViewControllerRepresentable {
                         do {
                             try requestHandler.perform([request])
                         } catch {
-                            print("Error performing text recognitionon page \(pageIndex): \(error.localizedDescription)")
+                            print("Error performing text recognitionon on page \(pageIndex): \(error.localizedDescription)")
                             group.leave()
                         }
                     }
@@ -71,7 +71,9 @@ struct ReceiptScannerView: UIViewControllerRepresentable {
                 
                 group.notify(queue: .main) {
                     EnvironmentProcessor.processReceiptText(fullText) {
-                        title, amount, date in self.parent.completion(title, amount, date)
+                        title, amount, date in
+                        print("Scanned data: title: \(title), amount: \(amount), date: \(date)")
+                        self.parent.completion(title, amount, date)
                     }
                 }
             }
