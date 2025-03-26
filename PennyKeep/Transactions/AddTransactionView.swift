@@ -8,9 +8,6 @@ struct AddTransactionView: View {
     var defaultDate: Date = Date()
     var transactionToEdit: Transaction?
     @Binding var scannedData: (title: String, amount: String, date: Date)?
-//    @State private var scannedTitle: String?
-//    @State private var scannedAmount: String?
-//    @State private var scannedDate: Date?
     
     @State private var title: String = ""
     @State private var amount: String = ""
@@ -19,7 +16,7 @@ struct AddTransactionView: View {
     @State private var transactionType: TransactionType = .expense // choose expense or income
     @State private var isPresentingCategoryManager = false
     
-    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedData: Binding<(title: String, amount: String, date: Date)?> /*scannedTitle: String? = nil, scannedAmount: String? = nil, scannedDate: Date? = nil*/) {
+    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedData: Binding<(title: String, amount: String, date: Date)?> ) {
         self.defaultDate = defaultDate
         self.transactionToEdit = transactionToEdit
         self._scannedData = scannedData
@@ -29,10 +26,6 @@ struct AddTransactionView: View {
         } else {
             _transactionDate = State(initialValue: defaultDate)
         }
-//        _scannedTitle = State(initialValue: scannedTitle)
-//        _scannedAmount = State(initialValue: scannedAmount)
-//        _scannedDate = State(initialValue: scannedDate)
-//            _transactionDate = State(initialValue: scannedDate ?? defaultDate)
     }
 
 
@@ -127,18 +120,6 @@ struct AddTransactionView: View {
                     transactionType = transaction.type
                     selectedCategory = transaction.category
                 } else {
-                    // For new transactions, if scanned data is available, use them
-//                    if let scannedTitle = scannedTitle {
-//                        title = scannedTitle
-//                    }
-//                    if let scannedAmount = scannedAmount {
-//                        amount = scannedAmount
-//                    }
-//                    if let scannedDate = scannedDate {
-//                        transactionDate = scannedDate
-//                    } else {
-//                        transactionDate = defaultDate
-//                    }
                     if let data = scannedData {
                         title = data.title
                         amount = data.amount
