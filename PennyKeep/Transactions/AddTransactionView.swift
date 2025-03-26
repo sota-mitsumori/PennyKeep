@@ -7,25 +7,34 @@ struct AddTransactionView: View {
     
     var defaultDate: Date = Date()
     var transactionToEdit: Transaction?
-    @State private var scannedTitle: String?
-    @State private var scannedAmount: String?
-    @State private var scannedDate: Date?
+    @Binding var scannedData: (title: String, amount: String, date: Date)?
+//    @State private var scannedTitle: String?
+//    @State private var scannedAmount: String?
+//    @State private var scannedDate: Date?
     
-    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedTitle: String? = nil, scannedAmount: String? = nil, scannedDate: Date? = nil) {
-        self.defaultDate = defaultDate
-        self.transactionToEdit = transactionToEdit
-        _scannedTitle = State(initialValue: scannedTitle)
-        _scannedAmount = State(initialValue: scannedAmount)
-        _scannedDate = State(initialValue: scannedDate)
-            _transactionDate = State(initialValue: scannedDate ?? defaultDate)
-    }
-
     @State private var title: String = ""
     @State private var amount: String = ""
     @State private var selectedCategory = ""
     @State private var transactionDate: Date
     @State private var transactionType: TransactionType = .expense // choose expense or income
     @State private var isPresentingCategoryManager = false
+    
+    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedData: Binding<(title: String, amount: String, date: Date)?> /*scannedTitle: String? = nil, scannedAmount: String? = nil, scannedDate: Date? = nil*/) {
+        self.defaultDate = defaultDate
+        self.transactionToEdit = transactionToEdit
+        self._scannedData = scannedData
+        
+        if let data = scannedData.wrappedValue {
+            _transactionDate = State(initialValue: data.date)
+        } else {
+            _transactionDate = State(initialValue: defaultDate)
+        }
+//        _scannedTitle = State(initialValue: scannedTitle)
+//        _scannedAmount = State(initialValue: scannedAmount)
+//        _scannedDate = State(initialValue: scannedDate)
+//            _transactionDate = State(initialValue: scannedDate ?? defaultDate)
+    }
+
 
     var body: some View {
         NavigationView {
@@ -99,9 +108,7 @@ struct AddTransactionView: View {
                         )
                         transactionStore.transactions.append(newTransaction)
                     }
-                    scannedTitle = nil
-                    scannedAmount = nil
-                    scannedDate = nil
+                    scannedData = nil
                     dismiss()
                 }
             )
@@ -113,10 +120,6 @@ struct AddTransactionView: View {
             
             
             .onAppear {
-                print("scannedTitle: \(scannedTitle ?? "nil")")
-                print("scannedAmount: \(scannedAmount ?? "nil")")
-                print("scannedDate: \(scannedDate?.description ?? "nil")")
-                
                 if let transaction = transactionToEdit {
                     title = transaction.title
                     amount = String(transaction.amount)
@@ -125,14 +128,21 @@ struct AddTransactionView: View {
                     selectedCategory = transaction.category
                 } else {
                     // For new transactions, if scanned data is available, use them
-                    if let scannedTitle = scannedTitle {
-                        title = scannedTitle
-                    }
-                    if let scannedAmount = scannedAmount {
-                        amount = scannedAmount
-                    }
-                    if let scannedDate = scannedDate {
-                        transactionDate = scannedDate
+//                    if let scannedTitle = scannedTitle {
+//                        title = scannedTitle
+//                    }
+//                    if let scannedAmount = scannedAmount {
+//                        amount = scannedAmount
+//                    }
+//                    if let scannedDate = scannedDate {
+//                        transactionDate = scannedDate
+//                    } else {
+//                        transactionDate = defaultDate
+//                    }
+                    if let data = scannedData {
+                        title = data.title
+                        amount = data.amount
+                        transactionDate = data.date
                     } else {
                         transactionDate = defaultDate
                     }
@@ -153,10 +163,10 @@ struct AddTransactionView: View {
 }
 
 struct AddTransactionView_Previews: PreviewProvider {
-    @State static var previewTransactions: [Transaction] = []
+    @State static var previewScannedData: (title: String, amount: String, date: Date)? = nil
     
     static var previews: some View {
-        AddTransactionView()
+        AddTransactionView(scannedData: $previewScannedData)
             .environmentObject(TransactionStore())
             .environmentObject(CategoryManager())
     }
