@@ -83,6 +83,7 @@ struct TransactionsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         transactionToEdit = nil
+                        scannedData = nil
                         isPresentingAddTransaction = true
                     }) {
                         Image(systemName: "plus")
