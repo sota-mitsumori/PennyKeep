@@ -56,6 +56,7 @@ struct TransactionsView: View {
     @State private var selectedDate: Date = Date()
     @State private var isPresentingReceiptScanner: Bool = false
     @State private var scannedData: (title: String, amount: String, date: Date)? = nil
+    @State private var isLoading: Bool = false
 
     // Filter transactions based on the selected date.
     var filteredTransactions: [Transaction] {
@@ -114,7 +115,11 @@ struct TransactionsView: View {
                 ReceiptScannerView { scannedTitle, scannedAmount, scannedDate in
                     scannedData = (scannedTitle, scannedAmount, scannedDate)
                     isPresentingReceiptScanner = false
-                    isPresentingAddTransaction = true
+                    isLoading = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        isPresentingAddTransaction = true
+                        isLoading = false
+                    }
                 }
             }
             
@@ -126,6 +131,21 @@ struct TransactionsView: View {
             }
             
         }
+        .overlay(
+            Group {
+                if isLoading {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                        VStack(spacing: 16) {
+                            ProgressView()
+                            Text("Loading...")
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+            }
+        )
     }
 }
 
