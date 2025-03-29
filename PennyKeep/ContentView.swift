@@ -15,6 +15,12 @@ struct ContentView: View {
                     Text("Transactions")
                 }
             
+            CategoryView()
+                .tabItem {
+                    Image(systemName: "chart.pie")
+                    Text("Category")
+                }
+            
             SettingsView()
                 .tabItem {
                     Image(systemName: "gear")
