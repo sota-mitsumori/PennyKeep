@@ -39,9 +39,9 @@ struct CategoryView : View {
     var filteredChartData: [CategoryChartData] {
         switch selectedOption {
         case 0: // Expense
-            return chartData.filter { $0.type == "Expense" }
+            return chartData.filter { $0.type == "Expense" && categoryManager.expenseCategories.contains($0.category)}
         case 1: // Income
-            return chartData.filter { $0.type == "Income" }
+            return chartData.filter { $0.type == "Income" && categoryManager.incomeCategories.contains($0.category)}
         case 2: // Amount Saved
             var data: [CategoryChartData] = []
             let categories = Set(transactionStore.transactions.map { $0.category })
