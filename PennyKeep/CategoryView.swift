@@ -12,6 +12,13 @@ struct CategoryChartData: Identifiable {
     let amount: Double
 }
 
+
+struct MonthlyChartData: Identifiable {
+    var id: Date { month }
+    let month: Date
+    let savedAmount: Double
+}
+
 struct CategoryView : View {
     @EnvironmentObject var transactionStore : TransactionStore
     @EnvironmentObject var categoryStore : AppSettings
@@ -35,6 +42,19 @@ struct CategoryView : View {
         }
         return data
     }
+    
+    var monthlySavedData: [MonthlyChartData] {
+        let grouped = Dictionary(grouping: transactionStore.transactions) { transaction in
+             Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: transaction.date))!
+        }
+        let data = grouped.map { (month, transactions) in
+             let expenseTotal = transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+             let incomeTotal = transactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+             return MonthlyChartData(month: month, savedAmount: incomeTotal - expenseTotal)
+        }
+        return data.sorted { $0.month < $1.month }
+    }
+    
     
     var filteredChartData: [CategoryChartData] {
         switch selectedOption {
@@ -71,17 +91,30 @@ struct CategoryView : View {
                     .padding()
                 }
                 
-                Chart(filteredChartData) { item in
-                    SectorMark(
-                        angle: .value("Amount", item.amount),
-                        innerRadius: .ratio(0.6),
-                        angularInset: 2
-                    )
-                    .cornerRadius(5)
-                    .foregroundStyle(by: .value("Category", item.category))
+                if selectedOption == 2 {
+                    Chart(monthlySavedData) { item in
+                         BarMark(
+                              x: .value("Month", item.month, unit: .month),
+                              y: .value("Amount Saved", item.savedAmount)
+                         )
+                    }
+                    .chartXAxis {
+                         AxisMarks(values: .automatic)
+                    }
+                    .padding()
+                } else {
+                    Chart(filteredChartData) { item in
+                         SectorMark(
+                              angle: .value("Amount", item.amount),
+                              innerRadius: .ratio(0.6),
+                              angularInset: 2
+                         )
+                         .cornerRadius(5)
+                         .foregroundStyle(by: .value("Category", item.category))
+                    }
+                    .chartLegend(alignment: .center, spacing: 16)
+                    .padding()
                 }
-                .chartLegend(alignment: .center, spacing: 16)
-                .padding()
             }
             .navigationTitle("Categories")
         }
