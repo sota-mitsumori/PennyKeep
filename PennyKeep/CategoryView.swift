@@ -21,7 +21,8 @@ struct MonthlyChartData: Identifiable {
 
 struct CategoryView : View {
     @EnvironmentObject var transactionStore : TransactionStore
-    @EnvironmentObject var categoryStore : AppSettings
+//    @EnvironmentObject var categoryStore : AppSettings
+    @EnvironmentObject var appSettings: AppSettings
     @EnvironmentObject var categoryManager: CategoryManager
     
     @State private var selectedOption : Int = 0
@@ -55,6 +56,40 @@ struct CategoryView : View {
         return data.sorted { $0.month < $1.month }
     }
     
+    var monthFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter
+    }
+    
+    var availableMonths: [Date] {
+        let months = transactionStore.transactions.map {
+            Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: $0.date))!
+        }
+        return Array(Set(months)).sorted()
+    }
+    
+    func chartData(for month: Date) -> [CategoryChartData] {
+        let transactionsForMonth = transactionStore.transactions.filter {
+            Calendar.current.isDate($0.date, equalTo: month, toGranularity: .month)
+        }
+        var data: [CategoryChartData] = []
+        let categories = Set(transactionsForMonth.map { $0.category })
+        for category in categories {
+            let transactionsForCategory = transactionsForMonth.filter { $0.category == category }
+            switch selectedOption {
+            case 0: // Expense
+                let expenseTotal = transactionsForCategory.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+                data.append(CategoryChartData(category: category, type: "Expense", amount: expenseTotal))
+            case 1: // Income
+                let incomeTotal = transactionsForCategory.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+                data.append(CategoryChartData(category: category, type: "Income", amount: incomeTotal))
+            default:
+                break
+            }
+        }
+        return data
+    }
     
     var filteredChartData: [CategoryChartData] {
         switch selectedOption {
@@ -103,17 +138,45 @@ struct CategoryView : View {
                     }
                     .padding()
                 } else {
-                    Chart(filteredChartData) { item in
-                         SectorMark(
-                              angle: .value("Amount", item.amount),
-                              innerRadius: .ratio(0.6),
-                              angularInset: 2
-                         )
-                         .cornerRadius(5)
-                         .foregroundStyle(by: .value("Category", item.category))
+                    TabView {
+                        ForEach(availableMonths, id: \.self) { month in
+                            VStack {
+                                Text(monthFormatter.string(from: month))
+                                    .font(.headline)
+                                Chart(chartData(for: month)) { item in
+                                    SectorMark(
+                                        angle: .value("Amount", item.amount),
+                                        innerRadius: .ratio(0.6),
+                                        angularInset: 2
+                                    )
+                                    .cornerRadius(5)
+                                    .foregroundStyle(by: .value("Category", item.category))
+                                }
+                                .chartLegend(alignment: .center, spacing: 16)
+                                .padding()
+                                
+                                // New list of categories with amount spent
+                                VStack(alignment: .leading, spacing: 4) {
+                                    ForEach(chartData(for: month)) { item in
+                                        HStack {
+                                            Text(item.category)
+                                            Spacer()
+                                            if appSettings.selectedCurrency == "¥" {
+                                                Text("¥\(item.amount, specifier: "%.0f")")
+                                            } else {
+                                                Text("\(appSettings.selectedCurrency)\(item.amount, specifier: "%.2f")")
+
+                                            }
+                                            
+                                    
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
                     }
-                    .chartLegend(alignment: .center, spacing: 16)
-                    .padding()
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
                 }
             }
             .navigationTitle("Categories")
