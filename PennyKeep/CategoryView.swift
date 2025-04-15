@@ -21,7 +21,6 @@ struct MonthlyChartData: Identifiable {
 
 struct CategoryView : View {
     @EnvironmentObject var transactionStore : TransactionStore
-//    @EnvironmentObject var categoryStore : AppSettings
     @EnvironmentObject var appSettings: AppSettings
     @EnvironmentObject var categoryManager: CategoryManager
     
@@ -143,7 +142,7 @@ struct CategoryView : View {
                             VStack {
                                 Text(monthFormatter.string(from: month))
                                     .font(.headline)
-                                Chart(chartData(for: month)) { item in
+                                Chart(chartData(for: month).filter { $0.amount != 0 }) { item in
                                     SectorMark(
                                         angle: .value("Amount", item.amount),
                                         innerRadius: .ratio(0.6),
@@ -157,7 +156,7 @@ struct CategoryView : View {
                                 
                                 // New list of categories with amount spent
                                 VStack(alignment: .leading, spacing: 4) {
-                                    ForEach(chartData(for: month)) { item in
+                                    ForEach(chartData(for: month).filter { $0.amount != 0 }) { item in
                                         HStack {
                                             Text(item.category)
                                             Spacer()
@@ -168,8 +167,8 @@ struct CategoryView : View {
 
                                             }
                                             
-                                    
                                         }
+                                        .padding()
                                     }
                                 }
                                 .padding(.horizontal)
