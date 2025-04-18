@@ -98,7 +98,7 @@ struct TransactionsView: View {
                         scannedData = nil
                         isPresentingAddTransaction = true
                     }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "pencil")
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -145,6 +145,23 @@ struct TransactionsView: View {
                     }
                 }
             }
+        )
+        .overlay(
+            Button(action: {
+                transactionToEdit = nil
+                scannedData = nil
+                isPresentingAddTransaction = true
+            }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 24))
+                    .padding(20)
+                    .background(Color.accentColor)
+                    .foregroundColor(.white)
+                    .clipShape(Circle())
+                    .frame(width: 64, height: 64)
+            }
+            .padding(),
+            alignment: .bottomTrailing
         )
     }
 }
