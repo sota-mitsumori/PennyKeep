@@ -17,7 +17,7 @@ struct SettingsView: View {
                     .pickerStyle(.automatic)
                 }
                 Section(header: Text("Version")) {
-                    Text("Version 1.2.0 (2025.04.15)")
+                    Text("Version 1.2.1 (2025.04.20)")
                 }
             }
             .navigationTitle("Settings")

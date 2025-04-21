@@ -57,6 +57,7 @@ struct TransactionsView: View {
     @State private var isPresentingReceiptScanner: Bool = false
     @State private var scannedData: (title: String, amount: String, date: Date)? = nil
     @State private var isLoading: Bool = false
+    @State private var isMenuExpanded: Bool = false
 
     // Filter transactions based on the selected date.
     var filteredTransactions: [Transaction] {
@@ -91,26 +92,7 @@ struct TransactionsView: View {
                 }
             }
             .navigationTitle("Transactions")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        transactionToEdit = nil
-                        scannedData = nil
-                        isPresentingAddTransaction = true
-                    }) {
-                        Image(systemName: "pencil")
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        transactionToEdit = nil
-                        isPresentingReceiptScanner = true
-                    }) {
-                        Image(systemName: "camera.fill")
-                    }
-                    .tint(.blue)
-                }
-            }
+            
             .sheet(isPresented: $isPresentingReceiptScanner) {
                 ReceiptScannerView { scannedTitle, scannedAmount, scannedDate in
                     scannedData = (scannedTitle, scannedAmount, scannedDate)
@@ -147,18 +129,53 @@ struct TransactionsView: View {
             }
         )
         .overlay(
-            Button(action: {
-                transactionToEdit = nil
-                scannedData = nil
-                isPresentingAddTransaction = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 24))
-                    .padding(20)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .clipShape(Circle())
-                    .frame(width: 64, height: 64)
+            ZStack(alignment: .bottomTrailing) {
+                if isMenuExpanded {
+                    VStack(spacing: 16) {
+                        Button(action: {
+                            transactionToEdit = nil
+                            scannedData = nil
+                            isPresentingAddTransaction = true
+                            isMenuExpanded = false
+                        }) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 24))
+                                .padding(20)
+                                .background(Color.accentColor)
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
+                                .frame(width: 64, height: 64)
+                        }
+                        Button(action: {
+                            transactionToEdit = nil
+                            isPresentingReceiptScanner = true
+                            isMenuExpanded = false
+                        }) {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 24))
+                                .padding(20)
+                                .background(Color.accentColor)
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
+                                .frame(width: 64, height: 64)
+                        }
+                    }
+                    .transition(.scale)
+                    .offset(y: -80)
+                }
+                Button(action: {
+                    withAnimation {
+                        isMenuExpanded.toggle()
+                    }
+                }) {
+                    Image(systemName: isMenuExpanded ? "xmark" : "plus")
+                        .font(.system(size: 24))
+                        .padding(20)
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .clipShape(Circle())
+                        .frame(width: 64, height: 64)
+                }
             }
             .padding(),
             alignment: .bottomTrailing
