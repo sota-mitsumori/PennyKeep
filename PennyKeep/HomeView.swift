@@ -29,47 +29,59 @@ struct HomeView: View {
         return Array(sorted.prefix(10))
     }
 
+    // Computed array of totals for the last 12 months
+    private var monthlyTotals: [(month: Date, income: Double, expense: Double)] {
+        let calendar = Calendar.current
+        return (0..<12).compactMap { offset in
+            guard let date = calendar.date(byAdding: .month, value: -offset, to: Date()) else { return nil }
+            let transactions = transactionStore.transactions.filter {
+                calendar.isDate($0.date, equalTo: date, toGranularity: .month)
+            }
+            let income = transactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+            let expense = transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+            return (month: date, income: income, expense: expense)
+        }.reversed()
+    }
+
+    // Formatter to display month and year
+    private static let monthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        return formatter
+    }()
+    
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     
-                    // Totals section.
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("This Month")
-                            .font(.title2)
-                            .bold()
-                        
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text("Income")
-                                    .font(.headline)
-                                if appSettings.selectedCurrency == "¥" {
-                                    Text("¥\(String(format:"%.0f", incomeTotal))")
-                                        .foregroundColor(.green)
-                                } else {
-                                    Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", incomeTotal))")
-                                        .foregroundColor(.green)
+                    // Monthly Totals section.
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(monthlyTotals, id: \.month) { total in
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(Self.monthFormatter.string(from: total.month))
+                                        .font(.headline)
+                                    if appSettings.selectedCurrency == "¥" {
+                                        Text("¥\(String(format: "%.0f", total.income))")
+                                            .foregroundColor(.green)
+                                        Text("¥\(String(format: "%.0f", total.expense))")
+                                            .foregroundColor(.red)
+                                    } else {
+                                        Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", total.income))")
+                                            .foregroundColor(.green)
+                                        Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", total.expense))")
+                                            .foregroundColor(.red)
+                                    }
                                 }
-                            }
-                            Spacer()
-                            VStack(alignment: .leading) {
-                                Text("Expense")
-                                    .font(.headline)
-                                if appSettings.selectedCurrency == "¥" {
-                                    Text("¥\(String(format:"%.0f", expenseTotal))")
-                                        .foregroundColor(.red)
-                                } else {
-                                    Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", expenseTotal))")
-                                        .foregroundColor(.red)
-                                }
+                                .padding()
+                                .background(Color(UIColor.secondarySystemBackground))
+                                .cornerRadius(8)
                             }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding()
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(8)
                     
                     // Recent Transactions section.
                     VStack(alignment: .leading, spacing: 8) {
@@ -110,4 +122,3 @@ struct HomeView: View {
         }
     }
 }
-
