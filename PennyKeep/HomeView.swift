@@ -18,15 +18,24 @@ struct HomeView: View {
     }
     
     var expenseTotal: Double {
-       currentMonthTransactions
-           .filter { $0.type == .expense }
-           .reduce(0) { $0 + $1.amount }
+        currentMonthTransactions
+            .filter { $0.type == .expense }
+            .reduce(0) { $0 + $1.amount }
     }
     
     
     var recentTransactions: [Transaction] {
-        let sorted = transactionStore.transactions.sorted { $0.date > $1.date }
-        return Array(sorted.prefix(10))
+        let calendar = Calendar.current
+        return transactionStore.transactions
+            .filter { calendar.isDate($0.date, equalTo: Date(), toGranularity: .month) }
+            .sorted { $0.date > $1.date }
+    }
+
+    // Group recent transactions by category
+    private var recentTransactionsByCategory: [(category: String, transactions: [Transaction])] {
+        let grouped = Dictionary(grouping: recentTransactions) { $0.category }
+        return grouped.map { (category: $0.key, transactions: $0.value) }
+            .sorted { $0.category < $1.category }
     }
 
     // Computed array of totals for the last 12 months
@@ -83,39 +92,50 @@ struct HomeView: View {
                         .padding(.horizontal)
                     }
                     
-                    // Recent Transactions section.
-                    VStack(alignment: .leading, spacing: 8) {
+                    // Recent Transactions by Category
+                    VStack(alignment: .leading, spacing: 16) {
                         Text("Recent Transactions")
                             .font(.title2)
                             .bold()
+                            .padding(.horizontal)
                         
-                        ForEach(recentTransactions) { transaction in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(transaction.date, style: .date)
-                                        .font(.caption)
-                                    Text(transaction.title)
-                                        .font(.headline)
-                                    Text(transaction.category)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                                Spacer()
-                                if appSettings.selectedCurrency == "¥" {
-                                    Text("\(transaction.type == .income ? "+" : "-")¥\(String(format: "%.0f", transaction.amount))")
-                                        .font(.headline)
-                                        .foregroundColor(transaction.type == .income ? .green : .red)
-                                } else {
-                                    Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
-                                        .font(.headline)
-                                        .foregroundColor(transaction.type == .income ? .green : .red)
+                        ForEach(recentTransactionsByCategory, id: \.category) { group in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(group.category)
+                                    .font(.headline)
+                                    .padding()
+                                
+                                ForEach(group.transactions) { transaction in
+                                    HStack {
+                                        VStack(alignment: .leading) {
+                                            Text(transaction.date, style: .date)
+                                                .font(.caption)
+                                            Text(transaction.title)
+                                                .font(.subheadline)
+                                                .bold()
+                                        }
+                                        Spacer()
+                                        if appSettings.selectedCurrency == "¥" {
+                                            Text("\(transaction.type == .income ? "+" : "-")¥\(String(format: "%.0f", transaction.amount))")
+                                                .font(.headline)
+                                                .foregroundColor(transaction.type == .income ? .green : .red)
+                                        } else {
+                                            Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
+                                                .font(.headline)
+                                                .foregroundColor(transaction.type == .income ? .green : .red)
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                    .padding(.horizontal)
+                                    Divider()
                                 }
                             }
-                            .padding(.vertical, 4)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .cornerRadius(8)
+                            .padding(.horizontal)
                         }
-                        .padding()
                     }
-                    .padding()
+                    .padding(.vertical)
                 }
             }
             .navigationTitle("Home")
