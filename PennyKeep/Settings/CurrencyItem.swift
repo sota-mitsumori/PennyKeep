@@ -12,7 +12,7 @@ let currencyItems: [CurrencyItem] = [
     CurrencyItem(code: "AFN", name: "Afghan Afghani"),
     CurrencyItem(code: "ALL", name: "Albanian Lek"),
     CurrencyItem(code: "AMD", name: "Armenian Dram"),
-    CurrencyItem(code: "ANG", name: "Netherlands Antillian Guilder"),
+    CurrencyItem(code: "ANG", name: "Netherlands Antillean Guilder"),
     CurrencyItem(code: "AOA", name: "Angolan Kwanza"),
     CurrencyItem(code: "ARS", name: "Argentine Peso"),
     CurrencyItem(code: "AUD", name: "Australian Dollar"),
