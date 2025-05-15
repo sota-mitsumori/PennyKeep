@@ -38,8 +38,8 @@ struct AddTransactionView: View {
                     Text("Income").tag(TransactionType.income)
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .onChange(of: transactionType) { newValue in
-                    if newValue == .expense {
+                .onChange(of: transactionType) {
+                    if transactionType == .expense {
                         selectedCategory = categoryManager.expenseCategories.first ?? ""
                     } else {
                         selectedCategory = categoryManager.incomeCategories.first ?? ""
