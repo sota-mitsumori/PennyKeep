@@ -2,16 +2,14 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var appSettings: AppSettings
-    
-    let currencies = ["$", "€", "£", "¥", "₹"]
-    
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Currency Settings")) {
+                Section(header: Text("Default Currency")) {
                     Picker("Currency", selection: $appSettings.selectedCurrency) {
-                        ForEach(currencies, id: \.self) { currency in
-                            Text(currency)
+                        ForEach(currencyItems) { item in
+                            Text("\(item.code) – \(item.name)")
+                                .tag(item.code)
                         }
                     }
                     .pickerStyle(.automatic)
@@ -31,4 +29,3 @@ struct SettingsView_Previews: PreviewProvider {
             .environmentObject(AppSettings())
     }
 }
-
