@@ -160,13 +160,7 @@ struct CategoryView : View {
                                         HStack {
                                             Text(item.category)
                                             Spacer()
-                                            if appSettings.selectedCurrency == "¥" {
-                                                Text("¥\(item.amount, specifier: "%.0f")")
-                                            } else {
-                                                Text("\(appSettings.selectedCurrency)\(item.amount, specifier: "%.2f")")
-
-                                            }
-                                            
+                                            Text(item.amount, format: .currency(code: appSettings.selectedCurrency))
                                         }
                                         .padding()
                                     }

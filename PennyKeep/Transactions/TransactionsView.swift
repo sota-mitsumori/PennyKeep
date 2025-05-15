@@ -16,15 +16,9 @@ struct TransactionRow: View {
                       .foregroundColor(.secondary)
               }
               Spacer()
-              if appSettings.selectedCurrency == "¥" {
-                  Text("\(transaction.type == .income ? "+" : "-")¥\(String(format: "%.0f", transaction.amount))")
-                      .font(.headline)
-                      .foregroundColor(transaction.type == .income ? .green : .red)
-              } else {
-                  Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
-                      .font(.headline)
-                      .foregroundColor(transaction.type == .income ? .green : .red)
-              }
+              Text("\(transaction.type == .income ? "+" : "-")\(transaction.amount, format: .currency(code: appSettings.selectedCurrency))")
+                  .font(.headline)
+                  .foregroundColor(transaction.type == .income ? .green : .red)
          }
          .swipeActions(edge: .trailing, allowsFullSwipe: false) {
               // Delete action
