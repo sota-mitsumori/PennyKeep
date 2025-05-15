@@ -163,7 +163,7 @@ let currencyItems: [CurrencyItem] = [
     CurrencyItem(code: "XAF", name: "Central African CFA Franc"),
     CurrencyItem(code: "XCD", name: "East Caribbean Dollar"),
     CurrencyItem(code: "XDR", name: "Special Drawing Rights"),
-    CurrencyItem(code: "XOF", name: "West African CFA franc"),
+    CurrencyItem(code: "XOF", name: "West African CFA Franc"),
     CurrencyItem(code: "XPF", name: "CFP Franc"),
     CurrencyItem(code: "YER", name: "Yemeni Rial"),
     CurrencyItem(code: "ZAR", name: "South African Rand"),
