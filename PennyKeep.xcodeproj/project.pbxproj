@@ -21,6 +21,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		BE07C5212DD4F44100F43D13 /* ci_scripts */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ci_scripts;
+			sourceTree = "<group>";
+		};
 		BE659F272D557B0600F9F9E4 /* PennyKeep */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -47,6 +52,7 @@
 			children = (
 				BE659F272D557B0600F9F9E4 /* PennyKeep */,
 				BE659F262D557B0600F9F9E4 /* Products */,
+				BE07C5212DD4F44100F43D13 /* ci_scripts */,
 			);
 			sourceTree = "<group>";
 		};
@@ -74,6 +80,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				BE07C5212DD4F44100F43D13 /* ci_scripts */,
 				BE659F272D557B0600F9F9E4 /* PennyKeep */,
 			);
 			name = PennyKeep;
