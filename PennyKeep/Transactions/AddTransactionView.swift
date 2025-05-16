@@ -1,9 +1,68 @@
 import SwiftUI
 
+// Helper to decode dynamic currency JSON
+private struct RawCurrencyResponse: Decodable {
+    let date: String
+    let rates: [String: Double]
+    
+    private struct DynamicKey: CodingKey {
+        var stringValue: String
+        init?(stringValue: String) { self.stringValue = stringValue }
+        var intValue: Int? { nil }
+        init?(intValue: Int) { nil }
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: DynamicKey.self)
+        // Decode the "date" field
+        date = try container.decode(String.self, forKey: DynamicKey(stringValue: "date")!)
+        // Determine the dynamic base key (e.g. "eur", "usd")
+        let allKeys = container.allKeys.filter { $0.stringValue != "date" }
+        guard let baseKey = allKeys.first else {
+            rates = [:]
+            return
+        }
+        // Decode nested rates dictionary under the baseKey
+        let nested = try container.nestedContainer(keyedBy: DynamicKey.self, forKey: baseKey)
+        var dict = [String: Double]()
+        for key in nested.allKeys {
+            dict[key.stringValue] = try nested.decode(Double.self, forKey: key)
+        }
+        rates = dict
+    }
+}
+
+
 struct AddTransactionView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var categoryManager: CategoryManager
+    @EnvironmentObject var appSettings: AppSettings
+    @State private var transactionCurrency: String = ""
+    
+    private func saveTransaction(with amountValue: Double) {
+        if let editingTransaction = transactionToEdit,
+           let index = transactionStore.transactions.firstIndex(where: { $0.id == editingTransaction.id }) {
+            transactionStore.transactions[index].title = title
+            transactionStore.transactions[index].amount = amountValue
+            transactionStore.transactions[index].date = transactionDate
+            transactionStore.transactions[index].category = selectedCategory
+            transactionStore.transactions[index].type = transactionType
+//            transactionStore.transactions[index].currency = transactionCurrency
+        } else {
+            let newTransaction = Transaction(
+                title: title,
+                amount: amountValue,
+                date: transactionDate,
+                category: selectedCategory,
+                type: transactionType,
+//                currency: transactionCurrency
+            )
+            transactionStore.transactions.append(newTransaction)
+        }
+        scannedData = nil
+        dismiss()
+    }
     
     var defaultDate: Date = Date()
     var transactionToEdit: Transaction?
@@ -47,8 +106,15 @@ struct AddTransactionView: View {
                 }
                 
                 Section(header: Text("Transaction Details")) {
-                    
                     TextField("Title", text: $title)
+                    
+                    Picker("Currency", selection: $transactionCurrency) {
+                        ForEach(currencyItems) { item in
+                            Text("\(item.code) – \(item.name)")
+                                .tag(item.code)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
                     
                     TextField("Amount", text: $amount)
                         .keyboardType(.decimalPad)
@@ -57,6 +123,7 @@ struct AddTransactionView: View {
                         .datePickerStyle(CompactDatePickerStyle())
             
                 }
+                
                 Section(header: Text("Category")) {
                     Picker("Category", selection: $selectedCategory) {
                         if transactionType == .expense {
@@ -82,27 +149,36 @@ struct AddTransactionView: View {
                 leading: Button("Cancel") { dismiss() },
                 trailing: Button("Save") {
                     guard let amountValue = Double(amount), !title.isEmpty else { return }
-                    if let editingTransaction = transactionToEdit,
-                       let index = transactionStore.transactions.firstIndex(where: { $0.id == editingTransaction.id }) {
-                        // Update the existing transaction.
-                        transactionStore.transactions[index].title = title
-                        transactionStore.transactions[index].amount = amountValue
-                        transactionStore.transactions[index].date = transactionDate
-                        transactionStore.transactions[index].category = selectedCategory
-                        transactionStore.transactions[index].type = transactionType
+                    let base = transactionCurrency.lowercased()
+                    let target = appSettings.selectedCurrency.lowercased()
+                    if base == target {
+                        // No conversion needed
+                        saveTransaction(with: amountValue)
                     } else {
-                        // Create a new transaction.
-                        let newTransaction = Transaction(
-                            title: title,
-                            amount: amountValue,
-                            date: transactionDate,
-                            category: selectedCategory,
-                            type: transactionType
-                        )
-                        transactionStore.transactions.append(newTransaction)
+                        // Format the user-selected transaction date for historical rates
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateFormat = "yyyy-MM-dd"
+                        let dateString = dateFormatter.string(from: transactionDate)
+                        let urlString = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@\(dateString)/v1/currencies/\(base).json"
+                        guard let url = URL(string: urlString) else { return }
+                        URLSession.shared.dataTask(with: url) { data, _, error in
+                            guard let data = data, error == nil else { return }
+                            do {
+                                let response = try JSONDecoder().decode(RawCurrencyResponse.self, from: data)
+                                let rate = response.rates[target] ?? 1.0
+                                let convertedAmount = amountValue * rate
+                                DispatchQueue.main.async {
+                                    saveTransaction(with: convertedAmount)
+                                }
+                            } catch {
+                                print("Currency conversion error:", error)
+                                DispatchQueue.main.async {
+                                    // Fallback to the original amount
+                                    saveTransaction(with: amountValue)
+                                }
+                            }
+                        }.resume()
                     }
-                    scannedData = nil
-                    dismiss()
                 }
             )
             .sheet(isPresented: $isPresentingCategoryManager) {
@@ -119,6 +195,7 @@ struct AddTransactionView: View {
                     transactionDate = transaction.date
                     transactionType = transaction.type
                     selectedCategory = transaction.category
+//                    transactionCurrency = transaction.currency
                 } else {
                     if let data = scannedData {
                         title = data.title
@@ -135,6 +212,7 @@ struct AddTransactionView: View {
                     } else {
                         selectedCategory = categoryManager.incomeCategories.first ?? ""
                     }
+                    transactionCurrency = appSettings.selectedCurrency
 //                    transactionDate = defaultDate
                 }
                 
@@ -150,5 +228,6 @@ struct AddTransactionView_Previews: PreviewProvider {
         AddTransactionView(scannedData: $previewScannedData)
             .environmentObject(TransactionStore())
             .environmentObject(CategoryManager())
+            .environmentObject(AppSettings())
     }
 }
