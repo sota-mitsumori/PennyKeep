@@ -159,7 +159,8 @@ struct AddTransactionView: View {
                         let dateFormatter = DateFormatter()
                         dateFormatter.dateFormat = "yyyy-MM-dd"
                         let dateString = dateFormatter.string(from: transactionDate)
-                        let urlString = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@\(dateString)/v1/currencies/\(base).json"
+                        let endpoint = transactionDate > Date() ? "latest" : dateString
+                        let urlString = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@\(endpoint)/v1/currencies/\(base).json"
                         guard let url = URL(string: urlString) else { return }
                         URLSession.shared.dataTask(with: url) { data, _, error in
                             guard let data = data, error == nil else { return }
