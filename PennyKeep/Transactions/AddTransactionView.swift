@@ -48,7 +48,7 @@ struct AddTransactionView: View {
             transactionStore.transactions[index].date = transactionDate
             transactionStore.transactions[index].category = selectedCategory
             transactionStore.transactions[index].type = transactionType
-//            transactionStore.transactions[index].currency = transactionCurrency
+            transactionStore.transactions[index].currency = transactionCurrency
         } else {
             let newTransaction = Transaction(
                 title: title,
@@ -56,7 +56,7 @@ struct AddTransactionView: View {
                 date: transactionDate,
                 category: selectedCategory,
                 type: transactionType,
-//                currency: transactionCurrency
+                currency: transactionCurrency
             )
             transactionStore.transactions.append(newTransaction)
         }
@@ -196,7 +196,7 @@ struct AddTransactionView: View {
                     transactionDate = transaction.date
                     transactionType = transaction.type
                     selectedCategory = transaction.category
-//                    transactionCurrency = transaction.currency
+                    transactionCurrency = transaction.currency
                 } else {
                     if let data = scannedData {
                         title = data.title
