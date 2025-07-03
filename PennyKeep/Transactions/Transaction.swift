@@ -10,13 +10,15 @@ struct Transaction: Identifiable, Codable {
     var id: UUID = UUID()
     var title: String
     var amount: Double
+    /// The original transaction amount before any conversion
+    var originalAmount: Double
     var date: Date
     var category: String
     var type: TransactionType = .expense // Default is expense
     var currency: String
 
     enum CodingKeys: String, CodingKey {
-        case id, title, amount, date, category, type, currency
+        case id, title, amount, originalAmount, date, category, type, currency
     }
 
     /// Designated initializer for creating new transactions
@@ -24,6 +26,7 @@ struct Transaction: Identifiable, Codable {
         id: UUID = UUID(),
         title: String,
         amount: Double,
+        originalAmount: Double,
         date: Date,
         category: String,
         type: TransactionType = .expense,
@@ -32,6 +35,7 @@ struct Transaction: Identifiable, Codable {
         self.id = id
         self.title = title
         self.amount = amount
+        self.originalAmount = originalAmount
         self.date = date
         self.category = category
         self.type = type
@@ -44,6 +48,7 @@ struct Transaction: Identifiable, Codable {
         id       = try container.decode(UUID.self,       forKey: .id)
         title    = try container.decode(String.self,     forKey: .title)
         amount   = try container.decode(Double.self,     forKey: .amount)
+        originalAmount = try container.decodeIfPresent(Double.self, forKey: .originalAmount) ?? amount
         date     = try container.decode(Date.self,       forKey: .date)
         category = try container.decode(String.self,     forKey: .category)
         type     = try container.decode(TransactionType.self, forKey: .type)

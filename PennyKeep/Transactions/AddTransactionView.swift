@@ -40,11 +40,12 @@ struct AddTransactionView: View {
     @EnvironmentObject var appSettings: AppSettings
     @State private var transactionCurrency: String = ""
     
-    private func saveTransaction(with amountValue: Double) {
+    private func saveTransaction(originalAmount: Double, convertedAmount: Double) {
         if let editingTransaction = transactionToEdit,
            let index = transactionStore.transactions.firstIndex(where: { $0.id == editingTransaction.id }) {
             transactionStore.transactions[index].title = title
-            transactionStore.transactions[index].amount = amountValue
+            transactionStore.transactions[index].amount = convertedAmount
+            transactionStore.transactions[index].originalAmount = originalAmount
             transactionStore.transactions[index].date = transactionDate
             transactionStore.transactions[index].category = selectedCategory
             transactionStore.transactions[index].type = transactionType
@@ -52,7 +53,8 @@ struct AddTransactionView: View {
         } else {
             let newTransaction = Transaction(
                 title: title,
-                amount: amountValue,
+                amount: convertedAmount,
+                originalAmount: originalAmount,
                 date: transactionDate,
                 category: selectedCategory,
                 type: transactionType,
@@ -69,7 +71,8 @@ struct AddTransactionView: View {
     @Binding var scannedData: (title: String, amount: String, date: Date)?
     
     @State private var title: String = ""
-    @State private var amount: String = ""
+    @State private var originalAmountString: String = ""
+    @State private var convertedAmount: Double = 0.0
     @State private var selectedCategory = ""
     @State private var transactionDate: Date
     @State private var transactionType: TransactionType = .expense // choose expense or income
@@ -116,8 +119,41 @@ struct AddTransactionView: View {
                     }
                     .pickerStyle(MenuPickerStyle())
                     
-                    TextField("Amount", text: $amount)
+                    TextField("Original Amount", text: $originalAmountString)
                         .keyboardType(.decimalPad)
+                        .onChange(of: originalAmountString) {
+                            let newValue = Double(originalAmountString) ?? 0.0
+                            // Live convert
+                            let base = transactionCurrency.lowercased()
+                            let target = appSettings.selectedCurrency.lowercased()
+                            if base == target {
+                                convertedAmount = newValue
+                            } else {
+                                let dateFormatter = DateFormatter()
+                                dateFormatter.dateFormat = "yyyy-MM-dd"
+                                let dateString = dateFormatter.string(from: transactionDate)
+                                let endpoint = transactionDate > Date() ? "latest" : dateString
+                                let urlString = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@\(endpoint)/v1/currencies/\(base).json"
+                                guard let url = URL(string: urlString) else {
+                                    convertedAmount = newValue
+                                    return
+                                }
+                                URLSession.shared.dataTask(with: url) { data, _, error in
+                                    guard let data = data, error == nil else {
+                                        DispatchQueue.main.async { convertedAmount = newValue }
+                                        return
+                                    }
+                                    do {
+                                        let response = try JSONDecoder().decode(RawCurrencyResponse.self, from: data)
+                                        let rate = response.rates[target] ?? 1.0
+                                        let converted = newValue * rate
+                                        DispatchQueue.main.async { convertedAmount = converted }
+                                    } catch {
+                                        DispatchQueue.main.async { convertedAmount = newValue }
+                                    }
+                                }.resume()
+                            }
+                        }
                     
                     DatePicker("Date", selection: $transactionDate, displayedComponents: .date)
                         .datePickerStyle(CompactDatePickerStyle())
@@ -143,17 +179,24 @@ struct AddTransactionView: View {
                     }
                     .foregroundColor(.blue)
                 }
+                
+                if transactionCurrency.lowercased() != appSettings.selectedCurrency.lowercased() {
+                    Section(header: Text("Converted Amount")) {
+                        Text("\(convertedAmount, specifier: "%.2f") \(appSettings.selectedCurrency)")
+                    }
+                }
             }
             .navigationTitle(transactionToEdit == nil ? "Add Transaction" : "Edit Transaction")
             .navigationBarItems(
                 leading: Button("Cancel") { dismiss() },
                 trailing: Button("Save") {
-                    guard let amountValue = Double(amount), !title.isEmpty else { return }
+                    guard let amountValue = Double(originalAmountString), !title.isEmpty else { return }
                     let base = transactionCurrency.lowercased()
                     let target = appSettings.selectedCurrency.lowercased()
                     if base == target {
                         // No conversion needed
-                        saveTransaction(with: amountValue)
+                        convertedAmount = amountValue
+                        saveTransaction(originalAmount: amountValue, convertedAmount: amountValue)
                     } else {
                         // Format the user-selected transaction date for historical rates
                         let dateFormatter = DateFormatter()
@@ -167,15 +210,17 @@ struct AddTransactionView: View {
                             do {
                                 let response = try JSONDecoder().decode(RawCurrencyResponse.self, from: data)
                                 let rate = response.rates[target] ?? 1.0
-                                let convertedAmount = amountValue * rate
+                                let converted = amountValue * rate
                                 DispatchQueue.main.async {
-                                    saveTransaction(with: convertedAmount)
+                                    convertedAmount = converted
+                                    saveTransaction(originalAmount: amountValue, convertedAmount: converted)
                                 }
                             } catch {
                                 print("Currency conversion error:", error)
                                 DispatchQueue.main.async {
                                     // Fallback to the original amount
-                                    saveTransaction(with: amountValue)
+                                    convertedAmount = amountValue
+                                    saveTransaction(originalAmount: amountValue, convertedAmount: amountValue)
                                 }
                             }
                         }.resume()
@@ -192,7 +237,8 @@ struct AddTransactionView: View {
             .onAppear {
                 if let transaction = transactionToEdit {
                     title = transaction.title
-                    amount = String(transaction.amount)
+                    originalAmountString = String(format: "%.2f", transaction.originalAmount)
+                    convertedAmount = transaction.amount
                     transactionDate = transaction.date
                     transactionType = transaction.type
                     selectedCategory = transaction.category
@@ -200,7 +246,7 @@ struct AddTransactionView: View {
                 } else {
                     if let data = scannedData {
                         title = data.title
-                        amount = data.amount
+                        originalAmountString = data.amount
                         transactionDate = data.date
                     } else {
                         transactionDate = defaultDate
