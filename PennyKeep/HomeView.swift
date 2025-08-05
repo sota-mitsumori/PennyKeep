@@ -72,17 +72,10 @@ struct HomeView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(Self.monthFormatter.string(from: total.month))
                                         .font(.headline)
-                                    if appSettings.selectedCurrency == "¥" {
-                                        Text("¥\(String(format: "%.0f", total.income))")
-                                            .foregroundColor(.green)
-                                        Text("¥\(String(format: "%.0f", total.expense))")
-                                            .foregroundColor(.red)
-                                    } else {
-                                        Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", total.income))")
-                                            .foregroundColor(.green)
-                                        Text("\(appSettings.selectedCurrency)\(String(format: "%.2f", total.expense))")
-                                            .foregroundColor(.red)
-                                    }
+                                    Text(total.income, format: .currency(code: appSettings.selectedCurrency))
+                                        .foregroundColor(.green)
+                                    Text(total.expense, format: .currency(code: appSettings.selectedCurrency))
+                                        .foregroundColor(.red)
                                 }
                                 .padding()
                                 .background(Color(UIColor.secondarySystemBackground))
@@ -115,15 +108,10 @@ struct HomeView: View {
                                                 .bold()
                                         }
                                         Spacer()
-                                        if appSettings.selectedCurrency == "¥" {
-                                            Text("\(transaction.type == .income ? "+" : "-")¥\(String(format: "%.0f", transaction.amount))")
-                                                .font(.headline)
-                                                .foregroundColor(transaction.type == .income ? .green : .red)
-                                        } else {
-                                            Text("\(transaction.type == .income ? "+" : "-")\(appSettings.selectedCurrency)\(String(format: "%.2f", transaction.amount))")
-                                                .font(.headline)
-                                                .foregroundColor(transaction.type == .income ? .green : .red)
-                                        }
+                                        let formattedAmount = transaction.amount.formatted(.currency(code: appSettings.selectedCurrency))
+                                        Text("\(transaction.type == .income ? "+" : "-")\(formattedAmount)")
+                                            .font(.headline)
+                                            .foregroundColor(transaction.type == .income ? .green : .red)
                                     }
                                     .padding(.vertical, 4)
                                     .padding(.horizontal)
