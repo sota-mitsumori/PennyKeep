@@ -83,6 +83,10 @@ struct TransactionsView: View {
                         }
                     }
                     .listStyle(InsetGroupedListStyle())
+                    .safeAreaInset(edge: .bottom) {
+                        Spacer()
+                            .frame(height: 100)
+                    }
                 }
             }
             .navigationTitle("Transactions")
@@ -181,5 +185,6 @@ struct TransactionsView_Previews: PreviewProvider {
     static var previews: some View {
         TransactionsView()
             .environmentObject(TransactionStore())
+            .environmentObject(AppSettings())
     }
 }
