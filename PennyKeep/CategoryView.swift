@@ -89,7 +89,13 @@ struct CategoryView : View {
         }
         return data
     }
-    
+
+    func transactionsForMonth(for month: Date, and category: String) -> [Transaction] {
+        return transactionStore.transactions.filter {
+            Calendar.current.isDate($0.date, equalTo: month, toGranularity: .month) && $0.category == category
+        }
+    }
+
     var filteredChartData: [CategoryChartData] {
         switch selectedOption {
         case 0: // Expense
@@ -155,17 +161,15 @@ struct CategoryView : View {
                                 .padding()
                                 
                                 // New list of categories with amount spent
-                                VStack(alignment: .leading, spacing: 4) {
-                                    ForEach(chartData(for: month).filter { $0.amount != 0 }) { item in
+                                List(chartData(for: month).filter { $0.amount != 0 }) { item in
+                                    NavigationLink(destination: CategoryTransactionListView(category: item.category, transactions: transactionsForMonth(for: month, and: item.category))) {
                                         HStack {
                                             Text(item.category)
                                             Spacer()
                                             Text(item.amount, format: .currency(code: appSettings.selectedCurrency))
                                         }
-                                        .padding()
                                     }
                                 }
-                                .padding(.horizontal)
                             }
                         }
                     }
