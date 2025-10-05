@@ -1,54 +1,28 @@
 import SwiftUI
 
-struct TransactionRow: View {
-    let transaction: Transaction
-    let onEdit: () -> Void
-    @EnvironmentObject var transactionStore: TransactionStore
-    @EnvironmentObject var appSettings: AppSettings
 
-    var body: some View {
-         HStack {
-              VStack(alignment: .leading) {
-                  Text(transaction.title)
-                      .font(.headline)
-                  Text(transaction.category)
-                      .font(.subheadline)
-                      .foregroundColor(.secondary)
-              }
-              Spacer()
-              Text("\(transaction.type == .income ? "+" : "-")\(transaction.amount, format: .currency(code: appSettings.selectedCurrency))")
-                  .font(.headline)
-                  .foregroundColor(transaction.type == .income ? .green : .red)
-         }
-         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-              // Delete action
-              Button(role: .destructive) {
-                  if let index = transactionStore.transactions.firstIndex(where: { $0.id == transaction.id }) {
-                      transactionStore.transactions.remove(at: index)
-                  }
-              } label: {
-                  Label("Delete", systemImage: "trash")
-              }
-              
-              // Edit action
-              Button {
-                  onEdit()
-              } label: {
-                  Label("Edit", systemImage: "pencil")
-              }
-              .tint(.blue)
-         }
-    }
-}
 
 struct TransactionsView: View {
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var appSettings: AppSettings
-    @State private var transactionToEdit: Transaction? = nil
-    @State private var isEditing: Bool = false
-    @State private var isPresentingAddTransaction: Bool = false
+    
+    // Enum to manage which sheet is active. Conforms to Identifiable.
+    enum ActiveSheet: Identifiable {
+        case add
+        case edit(Transaction)
+        case scanner
+
+        var id: String {
+            switch self {
+            case .add: return "add"
+            case .edit(let trans): return "edit-\(trans.id.uuidString)"
+            case .scanner: return "scanner"
+            }
+        }
+    }
+
+    @State private var activeSheet: ActiveSheet?
     @State private var selectedDate: Date = Date()
-    @State private var isPresentingReceiptScanner: Bool = false
     @State private var scannedData: (title: String, amount: String, date: Date)? = nil
     @State private var isLoading: Bool = false
     @State private var isMenuExpanded: Bool = false
@@ -77,8 +51,7 @@ struct TransactionsView: View {
                     List {
                         ForEach(filteredTransactions) { transaction in
                             TransactionRow(transaction: transaction, onEdit: {
-                                transactionToEdit = transaction
-                                isPresentingAddTransaction = true
+                                activeSheet = .edit(transaction)
                             })
                         }
                     }
@@ -90,26 +63,30 @@ struct TransactionsView: View {
                 }
             }
             .navigationTitle("Transactions")
-            
-            .sheet(isPresented: $isPresentingReceiptScanner) {
-                ReceiptScannerView { scannedTitle, scannedAmount, scannedDate in
-                    scannedData = (scannedTitle, scannedAmount, scannedDate)
-                    isPresentingReceiptScanner = false
-                    isLoading = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        isPresentingAddTransaction = true
-                        isLoading = false
+            .sheet(item: $activeSheet) { item in
+                switch item {
+                case .add:
+                    AddTransactionView(defaultDate: selectedDate, transactionToEdit: nil, scannedData: $scannedData)
+                        .id(UUID())
+                        .environmentObject(transactionStore)
+                        .environmentObject(CategoryManager())
+                case .edit(let transaction):
+                    AddTransactionView(defaultDate: transaction.date, transactionToEdit: transaction, scannedData: $scannedData)
+                        .id(UUID())
+                        .environmentObject(transactionStore)
+                        .environmentObject(CategoryManager())
+                case .scanner:
+                    ReceiptScannerView { scannedTitle, scannedAmount, scannedDate in
+                        scannedData = (scannedTitle, scannedAmount, scannedDate)
+                        activeSheet = nil // Dismiss scanner
+                        isLoading = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            activeSheet = .add // Present add transaction sheet
+                            isLoading = false
+                        }
                     }
                 }
             }
-            
-            .sheet(isPresented: $isPresentingAddTransaction) {
-                AddTransactionView(defaultDate: selectedDate, transactionToEdit: transactionToEdit, scannedData: $scannedData)
-                    .id(UUID())
-                    .environmentObject(transactionStore)
-                    .environmentObject(CategoryManager())
-            }
-            
         }
         .overlay(
             Group {
@@ -131,9 +108,8 @@ struct TransactionsView: View {
                 if isMenuExpanded {
                     VStack(spacing: 16) {
                         Button(action: {
-                            transactionToEdit = nil
                             scannedData = nil
-                            isPresentingAddTransaction = true
+                            activeSheet = .add
                             isMenuExpanded = false
                         }) {
                             Image(systemName: "pencil")
@@ -145,8 +121,7 @@ struct TransactionsView: View {
                                 .frame(width: 64, height: 64)
                         }
                         Button(action: {
-                            transactionToEdit = nil
-                            isPresentingReceiptScanner = true
+                            activeSheet = .scanner
                             isMenuExpanded = false
                         }) {
                             Image(systemName: "camera.fill")

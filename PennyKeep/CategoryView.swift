@@ -89,7 +89,13 @@ struct CategoryView : View {
         }
         return data
     }
-    
+
+    func transactionsForMonth(for month: Date, and category: String) -> [Transaction] {
+        return transactionStore.transactions.filter {
+            Calendar.current.isDate($0.date, equalTo: month, toGranularity: .month) && $0.category == category
+        }
+    }
+
     var filteredChartData: [CategoryChartData] {
         switch selectedOption {
         case 0: // Expense
@@ -113,6 +119,8 @@ struct CategoryView : View {
     }
     
     
+    @State private var selectedMonth: Date?
+
     var body : some View {
         NavigationView {
             VStack {
@@ -137,7 +145,7 @@ struct CategoryView : View {
                     }
                     .padding()
                 } else {
-                    TabView {
+                    TabView(selection: $selectedMonth) {
                         ForEach(availableMonths, id: \.self) { month in
                             VStack {
                                 Text(monthFormatter.string(from: month))
@@ -155,24 +163,31 @@ struct CategoryView : View {
                                 .padding()
                                 
                                 // New list of categories with amount spent
-                                VStack(alignment: .leading, spacing: 4) {
-                                    ForEach(chartData(for: month).filter { $0.amount != 0 }) { item in
+                                List(chartData(for: month).filter { $0.amount != 0 }) { item in
+                                    NavigationLink(destination: CategoryTransactionListView(category: item.category, transactions: transactionsForMonth(for: month, and: item.category))) {
                                         HStack {
                                             Text(item.category)
                                             Spacer()
                                             Text(item.amount, format: .currency(code: appSettings.selectedCurrency))
                                         }
-                                        .padding()
                                     }
                                 }
-                                .padding(.horizontal)
                             }
+                            .tag(month as Date?)
                         }
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 }
             }
             .navigationTitle("Categories")
+            .onAppear {
+                let currentMonth = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!
+                if availableMonths.contains(currentMonth) {
+                    selectedMonth = currentMonth
+                } else {
+                    selectedMonth = availableMonths.last // Fallback to the latest month
+                }
+            }
         }
     }
 }

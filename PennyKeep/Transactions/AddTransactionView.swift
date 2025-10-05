@@ -39,7 +39,13 @@ struct AddTransactionView: View {
     @EnvironmentObject var categoryManager: CategoryManager
     @EnvironmentObject var appSettings: AppSettings
     @State private var transactionCurrency: String = ""
-    
+
+    // Enum to manage sheet presentation
+    private enum ActiveSheet: Identifiable {
+        case manageCategories
+        var id: Int { hashValue }
+    }
+
     private func saveTransaction(originalAmount: Double, convertedAmount: Double) {
         if let editingTransaction = transactionToEdit,
            let index = transactionStore.transactions.firstIndex(where: { $0.id == editingTransaction.id }) {
@@ -65,20 +71,20 @@ struct AddTransactionView: View {
         scannedData = nil
         dismiss()
     }
-    
+
     var defaultDate: Date = Date()
     var transactionToEdit: Transaction?
     @Binding var scannedData: (title: String, amount: String, date: Date)?
-    
+
     @State private var title: String = ""
     @State private var originalAmountString: String = ""
     @State private var convertedAmount: Double = 0.0
     @State private var selectedCategory = ""
     @State private var transactionDate: Date
-    @State private var transactionType: TransactionType = .expense // choose expense or income
-    @State private var isPresentingCategoryManager = false
-    
-    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedData: Binding<(title: String, amount: String, date: Date)?> ) {
+    @State private var transactionType: TransactionType = .expense
+    @State private var activeSheet: ActiveSheet?
+
+    init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedData: Binding<(title: String, amount: String, date: Date)?>) {
         self.defaultDate = defaultDate
         self.transactionToEdit = transactionToEdit
         self._scannedData = scannedData
@@ -90,11 +96,9 @@ struct AddTransactionView: View {
         }
     }
 
-
     var body: some View {
         NavigationView {
             Form {
-                // Segmented control to select transaction type
                 Picker("Type", selection: $transactionType) {
                     Text("Expense").tag(TransactionType.expense)
                     Text("Income").tag(TransactionType.income)
@@ -107,7 +111,7 @@ struct AddTransactionView: View {
                         selectedCategory = categoryManager.incomeCategories.first ?? ""
                     }
                 }
-                
+
                 Section(header: Text("Transaction Details")) {
                     TextField("Title", text: $title)
                     
@@ -123,7 +127,6 @@ struct AddTransactionView: View {
                         .keyboardType(.decimalPad)
                         .onChange(of: originalAmountString) {
                             let newValue = Double(originalAmountString) ?? 0.0
-                            // Live convert
                             let base = transactionCurrency.lowercased()
                             let target = appSettings.selectedCurrency.lowercased()
                             if base == target {
@@ -157,9 +160,8 @@ struct AddTransactionView: View {
                     
                     DatePicker("Date", selection: $transactionDate, displayedComponents: .date)
                         .datePickerStyle(CompactDatePickerStyle())
-            
                 }
-                
+
                 Section(header: Text("Category")) {
                     Picker("Category", selection: $selectedCategory) {
                         if transactionType == .expense {
@@ -175,11 +177,11 @@ struct AddTransactionView: View {
                     .pickerStyle(MenuPickerStyle())
 
                     Button("Manage Categories") {
-                        isPresentingCategoryManager = true
+                        activeSheet = .manageCategories
                     }
                     .foregroundColor(.blue)
                 }
-                
+
                 if transactionCurrency.lowercased() != appSettings.selectedCurrency.lowercased() {
                     Section(header: Text("Converted Amount")) {
                         Text("\(convertedAmount, specifier: "%.2f") \(appSettings.selectedCurrency)")
@@ -194,11 +196,9 @@ struct AddTransactionView: View {
                     let base = transactionCurrency.lowercased()
                     let target = appSettings.selectedCurrency.lowercased()
                     if base == target {
-                        // No conversion needed
                         convertedAmount = amountValue
                         saveTransaction(originalAmount: amountValue, convertedAmount: amountValue)
                     } else {
-                        // Format the user-selected transaction date for historical rates
                         let dateFormatter = DateFormatter()
                         dateFormatter.dateFormat = "yyyy-MM-dd"
                         let dateString = dateFormatter.string(from: transactionDate)
@@ -218,7 +218,6 @@ struct AddTransactionView: View {
                             } catch {
                                 print("Currency conversion error:", error)
                                 DispatchQueue.main.async {
-                                    // Fallback to the original amount
                                     convertedAmount = amountValue
                                     saveTransaction(originalAmount: amountValue, convertedAmount: amountValue)
                                 }
@@ -227,13 +226,13 @@ struct AddTransactionView: View {
                     }
                 }
             )
-            .sheet(isPresented: $isPresentingCategoryManager) {
-                CategoryManagerView(transactionType: transactionType)
-                    .environmentObject(categoryManager)
-                
+            .sheet(item: $activeSheet) { item in
+                switch item {
+                case .manageCategories:
+                    CategoryManagerView(transactionType: transactionType)
+                        .environmentObject(categoryManager)
+                }
             }
-            
-            
             .onAppear {
                 if let transaction = transactionToEdit {
                     title = transaction.title
@@ -251,18 +250,14 @@ struct AddTransactionView: View {
                     } else {
                         transactionDate = defaultDate
                     }
-                
                     
-                    // Set default category based on transaction type.
                     if transactionType == .expense {
                         selectedCategory = categoryManager.expenseCategories.first ?? ""
                     } else {
                         selectedCategory = categoryManager.incomeCategories.first ?? ""
                     }
                     transactionCurrency = appSettings.selectedCurrency
-//                    transactionDate = defaultDate
                 }
-                
             }
         }
     }
