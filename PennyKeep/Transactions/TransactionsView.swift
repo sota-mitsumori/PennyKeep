@@ -26,25 +26,35 @@ struct TransactionsView: View {
     @State private var scannedData: (title: String, amount: String, date: Date)? = nil
     @State private var isLoading: Bool = false
     @State private var isMenuExpanded: Bool = false
+    @State private var searchText: String = ""
 
-    // Filter transactions based on the selected date.
+    // Filter transactions based on search text or selected date.
     var filteredTransactions: [Transaction] {
-        transactionStore.transactions.filter {
-            Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
+        if searchText.isEmpty {
+            return transactionStore.transactions.filter {
+                Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
+            }
+        } else {
+            return transactionStore.transactions.filter {
+                $0.title.localizedCaseInsensitiveContains(searchText) || $0.category.localizedCaseInsensitiveContains(searchText)
+            }
         }
     }
     
     var body: some View {
         NavigationView {
             VStack {
-                // Calendar at the top for date selection.
-                DatePicker("Select Date", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(GraphicalDatePickerStyle())
-                    .padding([.horizontal, .top])
+                // Show DatePicker only when not searching
+                if searchText.isEmpty {
+                    DatePicker("Select Date", selection: $selectedDate, displayedComponents: .date)
+                        .datePickerStyle(GraphicalDatePickerStyle())
+                        .padding([.horizontal, .top])
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 
                 if filteredTransactions.isEmpty {
                     Spacer()
-                    Text("No transactions for this day")
+                    Text(searchText.isEmpty ? "No transactions for this day" : "No matching transactions")
                         .foregroundColor(.gray)
                     Spacer()
                 } else {
@@ -63,6 +73,7 @@ struct TransactionsView: View {
                 }
             }
             .navigationTitle("Transactions")
+            .searchable(text: $searchText, prompt: "Search Transactions")
             .sheet(item: $activeSheet) { item in
                 switch item {
                 case .add:
@@ -104,8 +115,11 @@ struct TransactionsView: View {
             }
         )
         .overlay(
+            // Hide FAB when searching
             ZStack(alignment: .bottomTrailing) {
-                if isMenuExpanded {
+                if !searchText.isEmpty {
+                    EmptyView()
+                } else if isMenuExpanded {
                     VStack(spacing: 16) {
                         Button(action: {
                             scannedData = nil
@@ -136,23 +150,27 @@ struct TransactionsView: View {
                     .transition(.scale)
                     .offset(y: -80)
                 }
-                Button(action: {
-                    withAnimation {
-                        isMenuExpanded.toggle()
+                if !searchText.isEmpty {
+                    EmptyView()
+                } else {
+                    Button(action: {
+                        withAnimation {
+                            isMenuExpanded.toggle()
+                        }
+                    }) {
+                        Image(systemName: isMenuExpanded ? "xmark" : "plus")
+                            .font(.system(size: 24))
+                            .padding(20)
+                            .background(Color.accentColor)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                            .frame(width: 64, height: 64)
+                        }
                     }
-                }) {
-                    Image(systemName: isMenuExpanded ? "xmark" : "plus")
-                        .font(.system(size: 24))
-                        .padding(20)
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .clipShape(Circle())
-                        .frame(width: 64, height: 64)
                 }
-            }
-            .padding(),
-            alignment: .bottomTrailing
-        )
+                .padding(),
+                alignment: .bottomTrailing
+            )
     }
 }
 
