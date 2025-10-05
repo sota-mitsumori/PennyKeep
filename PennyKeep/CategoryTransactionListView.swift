@@ -5,7 +5,6 @@ struct CategoryTransactionListView: View {
     let transactions: [Transaction]
     
     @State private var transactionToEdit: Transaction?
-    @State private var isPresentingAddTransaction = false
     @State private var scannedData: (title: String, amount: String, date: Date)? = nil
 
     var body: some View {
@@ -13,13 +12,12 @@ struct CategoryTransactionListView: View {
             ForEach(transactions) { transaction in
                 TransactionRow(transaction: transaction, onEdit: {
                     transactionToEdit = transaction
-                    isPresentingAddTransaction = true
                 })
             }
         }
         .navigationTitle(category)
-        .sheet(isPresented: $isPresentingAddTransaction) {
-            AddTransactionView(transactionToEdit: transactionToEdit, scannedData: $scannedData)
+        .sheet(item: $transactionToEdit) { transaction in
+            AddTransactionView(transactionToEdit: transaction, scannedData: $scannedData)
         }
     }
 }

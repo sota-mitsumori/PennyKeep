@@ -21,6 +21,10 @@ struct TransactionRow: View {
                   .font(.headline)
                   .foregroundColor(transaction.type == .income ? .green : .red)
          }
+         .contentShape(Rectangle())
+         .onTapGesture {
+             onEdit()
+         }
          .swipeActions(edge: .trailing, allowsFullSwipe: false) {
               // Delete action
               Button(role: .destructive) {
