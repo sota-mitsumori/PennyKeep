@@ -119,6 +119,8 @@ struct CategoryView : View {
     }
     
     
+    @State private var selectedMonth: Date?
+
     var body : some View {
         NavigationView {
             VStack {
@@ -143,7 +145,7 @@ struct CategoryView : View {
                     }
                     .padding()
                 } else {
-                    TabView {
+                    TabView(selection: $selectedMonth) {
                         ForEach(availableMonths, id: \.self) { month in
                             VStack {
                                 Text(monthFormatter.string(from: month))
@@ -171,12 +173,21 @@ struct CategoryView : View {
                                     }
                                 }
                             }
+                            .tag(month as Date?)
                         }
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 }
             }
             .navigationTitle("Categories")
+            .onAppear {
+                let currentMonth = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!
+                if availableMonths.contains(currentMonth) {
+                    selectedMonth = currentMonth
+                } else {
+                    selectedMonth = availableMonths.last // Fallback to the latest month
+                }
+            }
         }
     }
 }
