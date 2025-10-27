@@ -47,16 +47,19 @@ struct AddTransactionView: View {
     }
 
     private func saveTransaction(originalAmount: Double, convertedAmount: Double) {
-        if let editingTransaction = transactionToEdit,
-           let index = transactionStore.transactions.firstIndex(where: { $0.id == editingTransaction.id }) {
-            transactionStore.transactions[index].title = title
-            transactionStore.transactions[index].amount = convertedAmount
-            transactionStore.transactions[index].originalAmount = originalAmount
-            transactionStore.transactions[index].date = transactionDate
-            transactionStore.transactions[index].category = selectedCategory
-            transactionStore.transactions[index].type = transactionType
-            transactionStore.transactions[index].currency = transactionCurrency
+        if let editingTransaction = transactionToEdit {
+            // Update existing transaction
+            editingTransaction.title = title
+            editingTransaction.amount = convertedAmount
+            editingTransaction.originalAmount = originalAmount
+            editingTransaction.date = transactionDate
+            editingTransaction.category = selectedCategory
+            editingTransaction.type = transactionType
+            editingTransaction.currency = transactionCurrency
+            
+            transactionStore.updateTransaction(editingTransaction)
         } else {
+            // Create new transaction
             let newTransaction = Transaction(
                 title: title,
                 amount: convertedAmount,
@@ -66,7 +69,7 @@ struct AddTransactionView: View {
                 type: transactionType,
                 currency: transactionCurrency
             )
-            transactionStore.transactions.append(newTransaction)
+            transactionStore.addTransaction(newTransaction)
         }
         scannedData = nil
         dismiss()
@@ -105,6 +108,9 @@ struct AddTransactionView: View {
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .onChange(of: transactionType) {
+                    // Refresh categories when transaction type changes
+                    categoryManager.refreshCategories()
+                    
                     if transactionType == .expense {
                         selectedCategory = categoryManager.expenseCategories.first ?? ""
                     } else {
@@ -167,10 +173,16 @@ struct AddTransactionView: View {
                         if transactionType == .expense {
                             ForEach(categoryManager.expenseCategories, id: \.self) { category in
                                 Text(category)
+                                    .onAppear {
+                                        print("Expense category in picker: \(category)")
+                                    }
                             }
                         } else {
                             ForEach(categoryManager.incomeCategories, id: \.self) { category in
                                 Text(category)
+                                    .onAppear {
+                                        print("Income category in picker: \(category)")
+                                    }
                             }
                         }
                     }
@@ -260,6 +272,21 @@ struct AddTransactionView: View {
                 }
             }
         }
+        .onAppear {
+            // Refresh categories when view appears
+            print("AddTransactionView appeared - refreshing categories")
+            
+            // Ensure the category manager has the model context
+            if categoryManager.modelContext == nil {
+                print("CategoryManager modelContext is nil, trying to get from environment")
+                // The model context should be available from the environment
+                // We'll need to get it from the model container
+            }
+            
+            categoryManager.refreshCategories()
+            print("Expense categories available: \(categoryManager.expenseCategories)")
+            print("Income categories available: \(categoryManager.incomeCategories)")
+        }
     }
 }
 
@@ -269,7 +296,7 @@ struct AddTransactionView_Previews: PreviewProvider {
     static var previews: some View {
         AddTransactionView(scannedData: $previewScannedData)
             .environmentObject(TransactionStore())
-            .environmentObject(CategoryManager())
             .environmentObject(AppSettings())
+            .environmentObject(CategoryManager())
     }
 }

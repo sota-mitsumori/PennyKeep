@@ -28,9 +28,7 @@ struct TransactionRow: View {
          .swipeActions(edge: .trailing, allowsFullSwipe: false) {
               // Delete action
               Button(role: .destructive) {
-                  if let index = transactionStore.transactions.firstIndex(where: { $0.id == transaction.id }) {
-                      transactionStore.transactions.remove(at: index)
-                  }
+                  transactionStore.deleteTransaction(transaction)
               } label: {
                   Label("Delete", systemImage: "trash")
               }
