@@ -45,6 +45,10 @@ struct CategoryManagerView: View {
                 dismiss()
             })
         }
+        .onAppear {
+            // Refresh categories when view appears
+            categoryManager.refreshCategories()
+        }
     }
 }
 
