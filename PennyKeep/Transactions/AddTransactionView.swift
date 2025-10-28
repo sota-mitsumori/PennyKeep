@@ -173,16 +173,10 @@ struct AddTransactionView: View {
                         if transactionType == .expense {
                             ForEach(categoryManager.expenseCategories, id: \.self) { category in
                                 Text(category)
-                                    .onAppear {
-                                        print("Expense category in picker: \(category)")
-                                    }
                             }
                         } else {
                             ForEach(categoryManager.incomeCategories, id: \.self) { category in
                                 Text(category)
-                                    .onAppear {
-                                        print("Income category in picker: \(category)")
-                                    }
                             }
                         }
                     }
