@@ -23,7 +23,6 @@ struct PennyKeepApp: App {
             print("✅ ModelContainer created successfully with CloudKit")
         } catch {
             print("❌ Failed to create ModelContainer: \(error)")
-            print("❌ Error details: \(error.localizedDescription)")
             fatalError("Could not initialize ModelContainer: \(error)")
         }
     }
