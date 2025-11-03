@@ -3,14 +3,20 @@ import SwiftData
 
 @Model
 class Category {
-    var name: String
-    var type: CategoryType
-    var typeRawValue: String
-    var order: Int
+    var name: String = ""
+    var typeRawValue: String = "expense"
+    var type: CategoryType {
+        get {
+            CategoryType(rawValue: typeRawValue) ?? .expense
+        }
+        set {
+            typeRawValue = newValue.rawValue
+        }
+    }
+    var order: Int = 0
     
     init(name: String, type: CategoryType, order: Int = 0) {
         self.name = name
-        self.type = type
         self.typeRawValue = type.rawValue
         self.order = order
     }
