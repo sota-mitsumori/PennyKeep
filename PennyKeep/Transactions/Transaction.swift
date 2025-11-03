@@ -9,15 +9,31 @@ enum TransactionType: String, Codable, CaseIterable {
 
 @Model
 class Transaction {
-    var id: UUID
-    var title: String
-    var amount: Double
+    var idString: String = ""
+    var id: UUID {
+        get {
+            UUID(uuidString: idString) ?? UUID()
+        }
+        set {
+            idString = newValue.uuidString
+        }
+    }
+    var title: String = ""
+    var amount: Double = 0.0
     /// The original transaction amount before any conversion
-    var originalAmount: Double
-    var date: Date
-    var category: String
-    var type: TransactionType
-    var currency: String
+    var originalAmount: Double = 0.0
+    var date: Date = Date()
+    var category: String = ""
+    var typeRawValue: String = "expense"
+    var type: TransactionType {
+        get {
+            TransactionType(rawValue: typeRawValue) ?? .expense
+        }
+        set {
+            typeRawValue = newValue.rawValue
+        }
+    }
+    var currency: String = "USD"
 
     /// Designated initializer for creating new transactions
     init(
@@ -30,13 +46,13 @@ class Transaction {
         type: TransactionType = .expense,
         currency: String
     ) {
-        self.id = id
+        self.idString = id.uuidString
         self.title = title
         self.amount = amount
         self.originalAmount = originalAmount
         self.date = date
         self.category = category
-        self.type = type
+        self.typeRawValue = type.rawValue
         self.currency = currency
     }
 }
