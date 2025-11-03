@@ -74,18 +74,18 @@ struct TransactionsView: View {
             }
             .navigationTitle("Transactions")
             .searchable(text: $searchText, prompt: "Search Transactions")
+            .onAppear {
+                // Refresh transactions when view appears
+                transactionStore.refreshTransactions()
+            }
             .sheet(item: $activeSheet) { item in
                 switch item {
                 case .add:
                     AddTransactionView(defaultDate: selectedDate, transactionToEdit: nil, scannedData: $scannedData)
                         .id(UUID())
-                        .environmentObject(transactionStore)
-                        .environmentObject(CategoryManager())
                 case .edit(let transaction):
                     AddTransactionView(defaultDate: transaction.date, transactionToEdit: transaction, scannedData: $scannedData)
                         .id(UUID())
-                        .environmentObject(transactionStore)
-                        .environmentObject(CategoryManager())
                 case .scanner:
                     ReceiptScannerView { scannedTitle, scannedAmount, scannedDate in
                         scannedData = (scannedTitle, scannedAmount, scannedDate)

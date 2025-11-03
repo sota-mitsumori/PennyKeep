@@ -1,25 +1,39 @@
 import Foundation
 import SwiftUI
+import SwiftData
 
-enum TransactionType: String, Codable {
+enum TransactionType: String, Codable, CaseIterable {
     case expense
     case income
 }
 
-struct Transaction: Identifiable, Codable {
-    var id: UUID = UUID()
-    var title: String
-    var amount: Double
-    /// The original transaction amount before any conversion
-    var originalAmount: Double
-    var date: Date
-    var category: String
-    var type: TransactionType = .expense // Default is expense
-    var currency: String
-
-    enum CodingKeys: String, CodingKey {
-        case id, title, amount, originalAmount, date, category, type, currency
+@Model
+class Transaction {
+    var idString: String = ""
+    var id: UUID {
+        get {
+            UUID(uuidString: idString) ?? UUID()
+        }
+        set {
+            idString = newValue.uuidString
+        }
     }
+    var title: String = ""
+    var amount: Double = 0.0
+    /// The original transaction amount before any conversion
+    var originalAmount: Double = 0.0
+    var date: Date = Date()
+    var category: String = ""
+    var typeRawValue: String = "expense"
+    var type: TransactionType {
+        get {
+            TransactionType(rawValue: typeRawValue) ?? .expense
+        }
+        set {
+            typeRawValue = newValue.rawValue
+        }
+    }
+    var currency: String = "USD"
 
     /// Designated initializer for creating new transactions
     init(
@@ -32,28 +46,16 @@ struct Transaction: Identifiable, Codable {
         type: TransactionType = .expense,
         currency: String
     ) {
-        self.id = id
+        self.idString = id.uuidString
         self.title = title
         self.amount = amount
         self.originalAmount = originalAmount
         self.date = date
         self.category = category
-        self.type = type
+        self.typeRawValue = type.rawValue
         self.currency = currency
     }
-
-    /// Custom decoder to supply a default currency for legacy records
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id       = try container.decode(UUID.self,       forKey: .id)
-        title    = try container.decode(String.self,     forKey: .title)
-        amount   = try container.decode(Double.self,     forKey: .amount)
-        originalAmount = try container.decodeIfPresent(Double.self, forKey: .originalAmount) ?? amount
-        date     = try container.decode(Date.self,       forKey: .date)
-        category = try container.decode(String.self,     forKey: .category)
-        type     = try container.decode(TransactionType.self, forKey: .type)
-        // If `currency` was missing in old data, fall back to the app default
-        currency = try container.decodeIfPresent(String.self, forKey: .currency)
-                   ?? AppSettings().selectedCurrency
-    }
 }
+
+// Extension to make Transaction conform to Identifiable for SwiftUI
+extension Transaction: Identifiable {}
