@@ -1,17 +1,36 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct PennyKeepApp: App {
-    @StateObject private var transactionStore = TransactionStore()
-    @StateObject private var categoryManager = CategoryManager()
-    @StateObject private var appSettings = AppSettings()
+    let modelContainer: ModelContainer
+    
+    init() {
+        do {
+            print("🔧 Creating ModelContainer with CloudKit...")
+            
+            // Settings to make ModelContainer use CloudKit
+            let configuration = ModelConfiguration(
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .automatic
+            )
+            
+            modelContainer = try ModelContainer(
+                for: Transaction.self, Category.self,
+                configurations: configuration
+            )
+            
+            print("✅ ModelContainer created successfully with CloudKit")
+        } catch {
+            print("❌ Failed to create ModelContainer: \(error)")
+            fatalError("Could not initialize ModelContainer: \(error)")
+        }
+    }
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(categoryManager)
-                .environmentObject(transactionStore)
-                .environmentObject(appSettings)
+            AppInitializer(modelContainer: modelContainer)
+                .modelContainer(modelContainer)
         }
     }
 }
