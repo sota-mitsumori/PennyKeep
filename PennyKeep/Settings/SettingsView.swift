@@ -129,7 +129,7 @@ struct SettingsView: View {
                 }
                 
                 Section(header: Text("Version")) {
-                    Text("Version 1.3.2 (2025.11.03)")
+                    Text("Version 1.3.3 (2025.11.05)")
                 }
             }
             .navigationTitle("Settings")
