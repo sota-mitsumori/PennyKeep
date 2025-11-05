@@ -5,6 +5,7 @@ struct AppInitializer: View {
     @StateObject private var transactionStore = TransactionStore()
     @StateObject private var categoryManager = CategoryManager()
     @StateObject private var appSettings = AppSettings()
+    @StateObject private var syncManager = SyncManager()
     
     let modelContainer: ModelContainer
     @State private var isInitialized = false
@@ -20,6 +21,7 @@ struct AppInitializer: View {
                     .environmentObject(categoryManager)
                     .environmentObject(transactionStore)
                     .environmentObject(appSettings)
+                    .environmentObject(syncManager)
             } else {
                 ProgressView("Loading...")
                     .onAppear {
@@ -41,6 +43,7 @@ struct AppInitializer: View {
         // Set up the stores with SwiftData context
         transactionStore.setModelContext(context)
         categoryManager.setModelContext(context)
+        syncManager.setModelContext(context)
         // AppSettings uses UserDefaults, no SwiftData context needed
         
         print("App initialized with model contexts")
