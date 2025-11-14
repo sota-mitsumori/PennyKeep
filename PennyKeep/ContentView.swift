@@ -37,6 +37,7 @@ struct ContentView_Previews: PreviewProvider {
             .environmentObject(CategoryManager())
             .environmentObject(TransactionStore())
             .environmentObject(AppSettings())
+            .environmentObject(AuthenticationManager())
     }
 }
 
