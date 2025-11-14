@@ -1,12 +1,15 @@
 import SwiftUI
+import AuthenticationServices
 
 struct SettingsView: View {
     @EnvironmentObject var appSettings: AppSettings
     @EnvironmentObject var syncManager: SyncManager
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var categoryManager: CategoryManager
+    @EnvironmentObject var authManager: AuthenticationManager
     
     @State private var dataCount: (transactionCount: Int, categoryCount: Int)?
+    @State private var showProfile = false
     
     private var lastSyncText: String {
         if let date = syncManager.lastSyncDate {
@@ -78,7 +81,7 @@ struct SettingsView: View {
                     // Sync button
                     Button(action: {
                         Task {
-                            await syncManager.manualSync()
+                            await syncManager.manualSync(authManager: authManager)
                             // Reload data after sync attempt (success or failure)
                             transactionStore.refreshTransactions()
                             categoryManager.refreshCategories()
@@ -129,10 +132,32 @@ struct SettingsView: View {
                 }
                 
                 Section(header: Text("Version")) {
-                    Text("Version 1.3.3 (2025.11.05)")
+                    Text("Version 1.3.4 (2025.11.14)")
                 }
             }
             .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        showProfile = true
+                    }) {
+                        if authManager.isSignedIn {
+                            AvatarView(
+                                name: authManager.userFullName,
+                                email: authManager.userEmail,
+                                size: 32
+                            )
+                        } else {
+                            Image(systemName: "person.circle")
+                                .font(.title3)
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showProfile) {
+                ProfileView()
+                    .environmentObject(authManager)
+            }
             .onAppear {
                 // Check iCloud status and load data count when view appears
                 Task {
@@ -151,5 +176,6 @@ struct SettingsView_Previews: PreviewProvider {
             .environmentObject(SyncManager())
             .environmentObject(TransactionStore())
             .environmentObject(CategoryManager())
+            .environmentObject(AuthenticationManager())
     }
 }
