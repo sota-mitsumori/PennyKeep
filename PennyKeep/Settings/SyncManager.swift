@@ -75,12 +75,20 @@ class SyncManager: ObservableObject {
     }
     
     /// Perform manual sync
-    func manualSync() async {
+    func manualSync(authManager: AuthenticationManager? = nil) async {
         guard let context = modelContext ?? Self.sharedModelContext else {
             await MainActor.run {
                 syncError = "ModelContext is not available"
             }
             return
+        }
+        
+        // Check if user is signed in with Apple and CloudKit is linked
+        if let authManager = authManager, authManager.isSignedIn {
+            if authManager.cloudKitUserRecordID == nil && !authManager.isLinkingCloudKit {
+                // Try to link with CloudKit if not already linked
+                await authManager.retryCloudKitLinking()
+            }
         }
         
         await MainActor.run {
@@ -101,7 +109,7 @@ class SyncManager: ObservableObject {
             await MainActor.run {
                 lastSyncDate = Date()
                 isSyncing = false
-                print("? Manual sync completed")
+                print("✅ Manual sync completed")
             }
         } catch {
             await MainActor.run {

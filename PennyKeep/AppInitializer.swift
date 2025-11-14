@@ -6,6 +6,7 @@ struct AppInitializer: View {
     @StateObject private var categoryManager = CategoryManager()
     @StateObject private var appSettings = AppSettings()
     @StateObject private var syncManager = SyncManager()
+    @StateObject private var authManager = AuthenticationManager()
     
     let modelContainer: ModelContainer
     @State private var isInitialized = false
@@ -22,6 +23,7 @@ struct AppInitializer: View {
                     .environmentObject(transactionStore)
                     .environmentObject(appSettings)
                     .environmentObject(syncManager)
+                    .environmentObject(authManager)
             } else {
                 ProgressView("Loading...")
                     .onAppear {
