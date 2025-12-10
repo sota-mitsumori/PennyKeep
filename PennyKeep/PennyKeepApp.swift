@@ -7,12 +7,11 @@ struct PennyKeepApp: App {
     
     init() {
         do {
-            print("🔧 Creating ModelContainer with CloudKit...")
+            print("🔧 Creating ModelContainer...")
             
-            // Settings to make ModelContainer use CloudKit
+            // Local storage only (Supabase handles cloud sync)
             let configuration = ModelConfiguration(
-                isStoredInMemoryOnly: false,
-                cloudKitDatabase: .automatic
+                isStoredInMemoryOnly: false
             )
             
             modelContainer = try ModelContainer(
@@ -20,7 +19,7 @@ struct PennyKeepApp: App {
                 configurations: configuration
             )
             
-            print("✅ ModelContainer created successfully with CloudKit")
+            print("✅ ModelContainer created successfully")
         } catch {
             print("❌ Failed to create ModelContainer: \(error)")
             fatalError("Could not initialize ModelContainer: \(error)")

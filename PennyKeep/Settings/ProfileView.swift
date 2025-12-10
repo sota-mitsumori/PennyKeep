@@ -1,27 +1,66 @@
 import SwiftUI
-import AuthenticationServices
 
 struct ProfileView: View {
-    @EnvironmentObject var authManager: AuthenticationManager
+    @EnvironmentObject var authManager: SupabaseAuthManager
     @Environment(\.dismiss) var dismiss
+    
+    @State private var showEmailAuth = false
+    @State private var emailAuthMode: EmailAuthMode = .signIn
     
     var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("Account")) {
                     if authManager.isSignedIn {
+                        signedInView
+                    } else {
+                        signInOptionsView
+                    }
+                }
+                
+                if authManager.isSignedIn {
+                    accountInfoSection
+                }
+            }
+            .navigationTitle("Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+            .sheet(isPresented: $showEmailAuth, onDismiss: {
+                // シートが閉じられた時に状態をリセット
+                emailAuthMode = .signIn
+            }) {
+                EmailAuthView(mode: emailAuthMode)
+                    .environmentObject(authManager)
+            }
+        }
+    }
+    
+    // MARK: - サインイン済みビュー
+    
+    private var signedInView: some View {
+        VStack(spacing: 12) {
                         HStack {
                             AvatarView(
                                 name: authManager.userFullName,
                                 email: authManager.userEmail,
                                 size: 50
                             )
+                
                             VStack(alignment: .leading, spacing: 4) {
                                 if let fullName = authManager.userFullName {
                                     Text("\(fullName.givenName ?? "") \(fullName.familyName ?? "")")
                                         .font(.headline)
+                    } else if let email = authManager.userEmail {
+                        Text(email)
+                            .font(.headline)
                                 } else {
-                                    Text("Signed in with Apple")
+                        Text("Account")
                                         .font(.headline)
                                 }
                                 
@@ -31,6 +70,7 @@ struct ProfileView: View {
                                         .foregroundColor(.secondary)
                                 }
                             }
+                
                             Spacer()
                         }
                         .padding(.vertical, 8)
@@ -43,44 +83,12 @@ struct ProfileView: View {
                             Spacer()
                         }
                         .padding(.vertical, 4)
-                        
-                        // CloudKit linking status
-                        HStack {
-                            if authManager.isLinkingCloudKit {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                Text("Linking with CloudKit...")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            } else if authManager.cloudKitUserRecordID != nil {
-                                Image(systemName: "icloud.fill")
-                                    .foregroundColor(.blue)
-                                Text("CloudKit: Linked")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Image(systemName: "icloud.slash")
-                                    .foregroundColor(.orange)
-                                Text("CloudKit: Not linked")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                        }
-                        .padding(.vertical, 4)
-                        
-                        if authManager.cloudKitUserRecordID == nil && !authManager.isLinkingCloudKit {
-                            Button(action: {
-                                Task {
-                                    await authManager.retryCloudKitLinking()
-                                }
-                            }) {
-                                Text("Link with CloudKit")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                    } else {
+        }
+    }
+    
+    // MARK: - サインインオプション
+    
+    private var signInOptionsView: some View {
                         VStack(spacing: 16) {
                             Image(systemName: "person.circle")
                                 .font(.system(size: 60))
@@ -90,42 +98,54 @@ struct ProfileView: View {
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                             
-                            Text("Sign in with Apple to sync your data across devices and access additional features.")
+            Text("Sign in to sync your data across devices and access additional features.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                             
-                            SignInWithAppleButton(
-                                onRequest: { request in
-                                    request.requestedScopes = [.fullName, .email]
-                                },
-                                onCompletion: { result in
-                                    authManager.handleSignInResult(result)
-                                }
-                            )
-                            .signInWithAppleButtonStyle(.black)
-                            .frame(height: 50)
-                            .cornerRadius(8)
-                            .padding(.horizontal)
-                        }
-                        .padding(.vertical, 20)
-                    }
+            // メール/パスワード認証ボタン
+            Button(action: {
+                // Sign Inモードに設定してからシートを表示
+                emailAuthMode = .signIn
+                showEmailAuth = true
+            }) {
+                HStack {
+                    Image(systemName: "envelope.fill")
+                    Text("Sign in with Email")
                 }
+                .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                            .cornerRadius(8)
+            }
+                            .padding(.horizontal)
                 
-                if authManager.isSignedIn {
-                    Section(header: Text("Account Information")) {
-                        if let userIdentifier = authManager.userIdentifier {
+            // アカウント作成リンク
                             HStack {
-                                Text("User ID")
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                                Text(userIdentifier.prefix(8) + "...")
+                Text("Don't have an account?")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
+                Button(action: {
+                    // Sign Upモードに設定してからシートを表示
+                    emailAuthMode = .signUp
+                    showEmailAuth = true
+                }) {
+                    Text("Sign up")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
                             }
                         }
-                        
+        .padding(.vertical, 20)
+    }
+    
+    // MARK: - アカウント情報セクション
+    
+    private var accountInfoSection: some View {
+        Group {
+            Section(header: Text("Account Information")) {
                         if let email = authManager.userEmail {
                             HStack {
                                 Text("Email")
@@ -140,7 +160,9 @@ struct ProfileView: View {
                     
                     Section {
                         Button(action: {
-                            authManager.signOut()
+                    Task {
+                        await authManager.signOut()
+                    }
                         }) {
                             HStack {
                                 Spacer()
@@ -152,22 +174,12 @@ struct ProfileView: View {
                     }
                 }
             }
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
+    
 }
 
 struct ProfileView_Previews: PreviewProvider {
     static var previews: some View {
         ProfileView()
-            .environmentObject(AuthenticationManager())
+            .environmentObject(SupabaseAuthManager())
     }
 }

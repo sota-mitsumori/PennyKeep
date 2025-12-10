@@ -1,14 +1,12 @@
 import SwiftUI
-import AuthenticationServices
 
 struct SettingsView: View {
     @EnvironmentObject var appSettings: AppSettings
-    @EnvironmentObject var syncManager: SyncManager
+    @EnvironmentObject var syncManager: SupabaseSyncManager
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var categoryManager: CategoryManager
-    @EnvironmentObject var authManager: AuthenticationManager
+    @EnvironmentObject var authManager: SupabaseAuthManager
     
-    @State private var dataCount: (transactionCount: Int, categoryCount: Int)?
     @State private var showProfile = false
     
     private var lastSyncText: String {
@@ -34,59 +32,27 @@ struct SettingsView: View {
                     .pickerStyle(.automatic)
                 }
                 
-                Section(header: Text("iCloud Sync")) {
-                    // iCloud Status
+                Section(header: Text("Sync")) {
+                    // Connection Status
                     HStack {
-                        Text("iCloud Status:")
+                        Text("Connection Status:")
                         Spacer()
-                        if syncManager.isCheckingStatus {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        } else {
-                            HStack(spacing: 4) {
-                                Image(systemName: syncManager.iCloudAccountStatus == .available ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                                    .foregroundColor(syncManager.iCloudAccountStatus == .available ? .green : .orange)
-                                Text(syncManager.iCloudStatusDescription)
-                                    .foregroundColor(.secondary)
-                            }
+                        HStack(spacing: 4) {
+                            Image(systemName: syncManager.isConnected ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                                .foregroundColor(syncManager.isConnected ? .green : .orange)
+                            Text(syncManager.isConnected ? "Connected" : "Not Connected")
+                                .foregroundColor(.secondary)
                         }
                     }
                     .font(.caption)
                     
-                    Button(action: {
-                        Task {
-                            await syncManager.checkiCloudStatus()
-                            // Also update data count
-                            dataCount = await syncManager.checkDataInCloud()
-                        }
-                    }) {
-                        Text("Check iCloud Status")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
-                    .disabled(syncManager.isCheckingStatus)
-                    
-                    // Data count
-                    if let dataCount = dataCount {
-                        HStack {
-                            Text("Local Data:")
-                            Spacer()
-                            Text("\(dataCount.transactionCount) transactions, \(dataCount.categoryCount) categories")
-                                .foregroundColor(.secondary)
-                        }
-                        .font(.caption)
-                        .padding(.top, 4)
-                    }
-                    
                     // Sync button
                     Button(action: {
                         Task {
-                            await syncManager.manualSync(authManager: authManager)
+                            await syncManager.manualSync()
                             // Reload data after sync attempt (success or failure)
                             transactionStore.refreshTransactions()
                             categoryManager.refreshCategories()
-                            // Update data count
-                            dataCount = await syncManager.checkDataInCloud()
                         }
                     }) {
                         HStack {
@@ -99,7 +65,13 @@ struct SettingsView: View {
                             Text(syncManager.isSyncing ? "Syncing..." : "Sync Now")
                         }
                     }
-                    .disabled(syncManager.isSyncing)
+                    .disabled(syncManager.isSyncing || !authManager.isSignedIn)
+                    
+                    if !authManager.isSignedIn {
+                        Text("Please sign in to sync data")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
                     if let error = syncManager.syncError {
                         VStack(alignment: .leading, spacing: 8) {
@@ -159,10 +131,9 @@ struct SettingsView: View {
                     .environmentObject(authManager)
             }
             .onAppear {
-                // Check iCloud status and load data count when view appears
+                // Check connection status when view appears
                 Task {
-                    await syncManager.checkiCloudStatus()
-                    dataCount = await syncManager.checkDataInCloud()
+                    await syncManager.checkConnection()
                 }
             }
         }
@@ -173,9 +144,9 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
             .environmentObject(AppSettings())
-            .environmentObject(SyncManager())
+            .environmentObject(SupabaseSyncManager())
             .environmentObject(TransactionStore())
             .environmentObject(CategoryManager())
-            .environmentObject(AuthenticationManager())
+            .environmentObject(SupabaseAuthManager())
     }
 }

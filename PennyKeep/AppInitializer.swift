@@ -5,8 +5,8 @@ struct AppInitializer: View {
     @StateObject private var transactionStore = TransactionStore()
     @StateObject private var categoryManager = CategoryManager()
     @StateObject private var appSettings = AppSettings()
-    @StateObject private var syncManager = SyncManager()
-    @StateObject private var authManager = AuthenticationManager()
+    @StateObject private var syncManager = SupabaseSyncManager()
+    @StateObject private var authManager = SupabaseAuthManager()
     
     let modelContainer: ModelContainer
     @State private var isInitialized = false
@@ -44,8 +44,11 @@ struct AppInitializer: View {
         
         // Set up the stores with SwiftData context
         transactionStore.setModelContext(context)
+        transactionStore.setSyncManager(syncManager)
         categoryManager.setModelContext(context)
+        categoryManager.setSyncManager(syncManager)
         syncManager.setModelContext(context)
+        syncManager.setAuthManager(authManager)
         // AppSettings uses UserDefaults, no SwiftData context needed
         
         print("App initialized with model contexts")
