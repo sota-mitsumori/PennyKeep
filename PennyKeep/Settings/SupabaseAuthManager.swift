@@ -19,14 +19,16 @@ class SupabaseAuthManager: NSObject, ObservableObject {
     }
     
     private func setupSupabase() {
-        guard let supabaseURL = URL(string: SupabaseConfig.supabaseURL) else {
-            print("⚠️ Invalid Supabase URL: \(SupabaseConfig.supabaseURL)")
+        guard let urlString = SupabaseConfig.supabaseURL,
+              let supabaseURL = URL(string: urlString),
+              let supabaseKey = SupabaseConfig.supabaseAnonKey else {
+            print("⚠️ Supabase is not configured. Authentication features will be unavailable.")
             return
         }
         
         self.supabase = SupabaseClient(
             supabaseURL: supabaseURL,
-            supabaseKey: SupabaseConfig.supabaseAnonKey
+            supabaseKey: supabaseKey
         )
     }
     
@@ -35,7 +37,13 @@ class SupabaseAuthManager: NSObject, ObservableObject {
     /// 保存されたセッションを読み込む
     private func loadSession() {
         Task {
-            guard let supabase = supabase else { return }
+            guard let supabase = supabase else {
+                // Supabaseが設定されていない場合は、サインイン状態をfalseに設定
+                await MainActor.run {
+                    isSignedIn = false
+                }
+                return
+            }
             
             do {
                 let session = try await supabase.auth.session
@@ -43,7 +51,7 @@ class SupabaseAuthManager: NSObject, ObservableObject {
                     updateUserState(from: session)
                 }
             } catch {
-                // セッションなし
+                // セッションなしまたはネットワークエラー
                 await MainActor.run {
                     isSignedIn = false
                 }

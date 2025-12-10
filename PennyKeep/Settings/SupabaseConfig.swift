@@ -4,7 +4,7 @@ import Foundation
 struct SupabaseConfig {
     /// SupabaseプロジェクトのURL
     /// Info.plistまたは環境変数から読み込み
-    static let supabaseURL: String = {
+    static var supabaseURL: String? {
         // Info.plistから読み込む
         if let url = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String, !url.isEmpty {
             return url
@@ -13,13 +13,13 @@ struct SupabaseConfig {
         if let url = ProcessInfo.processInfo.environment["SUPABASE_URL"], !url.isEmpty {
             return url
         }
-        // フォールバック（開発用）
-        fatalError("SUPABASE_URL is not set. Please configure it in Info.plist or environment variables.")
-    }()
+        // 設定が見つからない場合はnilを返す（アプリはオフラインで動作可能）
+        return nil
+    }
     
     /// Supabase Anon Key
     /// Info.plistまたは環境変数から読み込み
-    static let supabaseAnonKey: String = {
+    static var supabaseAnonKey: String? {
         // Info.plistから読み込む
         if let key = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_ANON_KEY") as? String, !key.isEmpty {
             return key
@@ -28,9 +28,14 @@ struct SupabaseConfig {
         if let key = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"], !key.isEmpty {
             return key
         }
-        // フォールバック（開発用）
-        fatalError("SUPABASE_ANON_KEY is not set. Please configure it in Info.plist or environment variables.")
-    }()
+        // 設定が見つからない場合はnilを返す（アプリはオフラインで動作可能）
+        return nil
+    }
+    
+    /// Supabaseが設定されているかどうか
+    static var isConfigured: Bool {
+        return supabaseURL != nil && supabaseAnonKey != nil
+    }
     
     /// パスワードリセットのリダイレクトURL
     /// アプリのURLスキームに合わせて設定してください

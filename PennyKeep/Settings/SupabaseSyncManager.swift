@@ -34,17 +34,19 @@ class SupabaseSyncManager: ObservableObject {
     }
     
     private func setupSupabase() {
-        guard let supabaseURL = URL(string: SupabaseConfig.supabaseURL) else {
-            print("⚠️ Invalid Supabase URL: \(SupabaseConfig.supabaseURL)")
+        guard let urlString = SupabaseConfig.supabaseURL,
+              let supabaseURL = URL(string: urlString),
+              let supabaseKey = SupabaseConfig.supabaseAnonKey else {
+            print("⚠️ Supabase is not configured. App will work in offline mode.")
             return
         }
         
         self.supabase = SupabaseClient(
             supabaseURL: supabaseURL,
-            supabaseKey: SupabaseConfig.supabaseAnonKey
+            supabaseKey: supabaseKey
         )
         
-        // 接続状態を確認
+        // 接続状態を確認（非ブロッキング）
         Task {
             await checkConnection()
         }
