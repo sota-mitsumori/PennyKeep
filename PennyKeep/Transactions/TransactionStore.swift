@@ -48,7 +48,8 @@ class TransactionStore: ObservableObject {
             return 
         }
         
-        print("Adding transaction: \(transaction.title) - \(transaction.amount)")
+        print(
+            "Adding transaction: \(transaction.title) - \(transaction.amount)")
         context.insert(transaction)
         
         do {
