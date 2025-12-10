@@ -10,13 +10,18 @@ struct SettingsView: View {
     @State private var showProfile = false
     
     private var lastSyncText: String {
-        if let date = syncManager.lastSyncDate {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .short
-            formatter.timeStyle = .short
-            return formatter.string(from: date)
+        guard let date = syncManager.lastSyncDate else {
+            return "Not synced yet"
         }
-        return "Not synced yet"
+        
+        let relative = RelativeDateTimeFormatter()
+        relative.unitsStyle = .short
+        let relativeText = relative.localizedString(for: date, relativeTo: Date())
+        
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return "\(relativeText) • \(formatter.string(from: date))"
     }
     
     var body: some View {
@@ -33,74 +38,89 @@ struct SettingsView: View {
                 }
                 
                 Section(header: Text("Sync")) {
-                    // Connection Status
-                    HStack {
-                        Text("Connection Status:")
-                        Spacer()
-                        HStack(spacing: 4) {
-                            Image(systemName: syncManager.isConnected ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                                .foregroundColor(syncManager.isConnected ? .green : .orange)
-                            Text(syncManager.isConnected ? "Connected" : "Not Connected")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .font(.caption)
-                    
-                    // Sync button
-                    Button(action: {
-                        Task {
-                            await syncManager.manualSync()
-                            // Reload data after sync attempt (success or failure)
-                            transactionStore.refreshTransactions()
-                            categoryManager.refreshCategories()
-                        }
-                    }) {
-                        HStack {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(alignment: .center, spacing: 10) {
+                            Label(syncManager.isConnected ? "Connected" : "Not Connected",
+                                  systemImage: syncManager.isConnected ? "checkmark.seal.fill" : "wifi.slash")
+                            .font(.callout.weight(.medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .foregroundColor(syncManager.isConnected ? .green : .orange)
+                            .background((syncManager.isConnected ? Color.green.opacity(0.12) : Color.orange.opacity(0.12)), in: Capsule())
+                            
+                            Spacer()
+                            
                             if syncManager.isSyncing {
                                 ProgressView()
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "arrow.clockwise")
+                                    .scaleEffect(0.9)
                             }
-                            Text(syncManager.isSyncing ? "Syncing..." : "Sync Now")
                         }
-                    }
-                    .disabled(syncManager.isSyncing || !authManager.isSignedIn)
-                    
-                    if !authManager.isSignedIn {
-                        Text("Please sign in to sync data")
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Label {
+                                Text(lastSyncText)
+                                    .foregroundColor(.secondary)
+                            } icon: {
+                                Image(systemName: "clock.arrow.2.circlepath")
+                            }
                             .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if let error = syncManager.syncError {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.red)
-                                Text(error)
-                                    .foregroundColor(.red)
+                            
+                            if !authManager.isSignedIn {
+                                Label("Sign in to enable sync", systemImage: "person.crop.circle.badge.exclamationmark")
                                     .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        Button(action: {
+                            Task {
+                                await syncManager.manualSync()
+                                // Reload data after sync attempt (success or failure)
+                                transactionStore.refreshTransactions()
+                                categoryManager.refreshCategories()
+                            }
+                        }) {
+                            HStack {
+                                Spacer()
+                                if syncManager.isSyncing {
+                                    ProgressView()
+                                        .scaleEffect(0.9)
+                                    Text("Syncing...")
+                                } else {
+                                    Image(systemName: "arrow.clockwise.circle.fill")
+                                    Text("Sync Now")
+                                }
                                 Spacer()
                             }
-                            Button(action: {
-                                syncManager.clearSyncError()
-                            }) {
-                                Text("Dismiss")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                            }
                         }
-                        .padding(.vertical, 4)
+                        .controlSize(.large)
+                        .buttonStyle(.borderedProminent)
+                        .tint(.accentColor)
+                        .disabled(syncManager.isSyncing || !authManager.isSignedIn)
+                        
+                        if let error = syncManager.syncError {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label {
+                                    Text(error)
+                                        .font(.caption)
+                                } icon: {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                }
+                                .foregroundColor(.red)
+                                
+                                Button(action: {
+                                    syncManager.clearSyncError()
+                                }) {
+                                    Text("Dismiss")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            .padding()
+                            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
                     }
-                    
-                    HStack {
-                        Text("Last Sync:")
-                        Spacer()
-                        Text(lastSyncText)
-                            .foregroundColor(.secondary)
-                    }
-                    .font(.caption)
+                    .listRowBackground(Color(.systemGroupedBackground))
                 }
                 
                 Section(header: Text("Version")) {

@@ -18,6 +18,10 @@ class SupabaseSyncManager: ObservableObject {
     private let lastSyncDateKey = "supabaseLastSyncDate"
     
     init() {
+        // UserDefaultsから最終同期日時を読み込む
+        if let savedDate = UserDefaults.standard.object(forKey: lastSyncDateKey) as? Date {
+            self.lastSyncDate = savedDate
+        }
         setupSupabase()
     }
     

@@ -9,19 +9,20 @@ struct ProfileView: View {
     
     var body: some View {
         NavigationStack {
-            Form {
-                Section(header: Text("Account")) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    profileHeader
+                    
                     if authManager.isSignedIn {
-                        signedInView
+                        accountInfoSection
+                        signOutButton
                     } else {
                         signInOptionsView
                     }
                 }
-                
-                if authManager.isSignedIn {
-                    accountInfoSection
-                }
+                .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -41,140 +42,121 @@ struct ProfileView: View {
         }
     }
     
-    // MARK: - サインイン済みビュー
-    
-    private var signedInView: some View {
+    // MARK: - Header
+    private var profileHeader: some View {
         VStack(spacing: 12) {
-                        HStack {
-                            AvatarView(
-                                name: authManager.userFullName,
-                                email: authManager.userEmail,
-                                size: 50
-                            )
-                
-                            VStack(alignment: .leading, spacing: 4) {
-                                if let fullName = authManager.userFullName {
-                                    Text("\(fullName.givenName ?? "") \(fullName.familyName ?? "")")
-                                        .font(.headline)
-                    } else if let email = authManager.userEmail {
-                        Text(email)
-                            .font(.headline)
-                                } else {
-                        Text("Account")
-                                        .font(.headline)
-                                }
-                                
-                                if let email = authManager.userEmail {
-                                    Text(email)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                
-                            Spacer()
-                        }
-                        .padding(.vertical, 8)
-                        
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Account Status: Active")
-                                .font(.subheadline)
-                            Spacer()
-                        }
-                        .padding(.vertical, 4)
+            AvatarView(
+                name: authManager.userFullName,
+                email: authManager.userEmail,
+                size: 72
+            )
+            
+            Text(displayName)
+                .font(.title3.weight(.semibold))
+            
+            if let email = authManager.userEmail {
+                Text(email)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Label(authManager.isSignedIn ? "Signed In" : "Signed Out",
+                  systemImage: authManager.isSignedIn ? "checkmark.seal.fill" : "xmark.seal.fill")
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .foregroundColor(authManager.isSignedIn ? .green : .secondary)
+            .background((authManager.isSignedIn ? Color.green.opacity(0.12) : Color.secondary.opacity(0.12)), in: Capsule())
         }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.secondary.opacity(0.12))
+        )
+    }
+    
+    private var displayName: String {
+        if let fullName = authManager.userFullName {
+            let given = fullName.givenName ?? ""
+            let family = fullName.familyName ?? ""
+            let combined = "\(given) \(family)".trimmingCharacters(in: .whitespaces)
+            if !combined.isEmpty {
+                return combined
+            }
+        }
+        return authManager.userEmail ?? "Welcome"
     }
     
     // MARK: - サインインオプション
-    
     private var signInOptionsView: some View {
-                        VStack(spacing: 16) {
-                            Image(systemName: "person.circle")
-                                .font(.system(size: 60))
-                                .foregroundColor(.gray)
-                            
-                            Text("Sign in to your account")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            
-            Text("Sign in to sync your data across devices and access additional features.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                            
-            // メール/パスワード認証ボタン
-            Button(action: {
-                // Sign Inモードに設定してからシートを表示
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Stay in sync across devices.")
+                .font(.headline)
+            
+            Text("Sign in to back up your data securely and keep categories and transactions aligned.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            Button {
                 emailAuthMode = .signIn
                 showEmailAuth = true
-            }) {
-                HStack {
-                    Image(systemName: "envelope.fill")
-                    Text("Sign in with Email")
-                }
-                .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                .background(Color.blue)
-                .foregroundColor(.white)
-                            .cornerRadius(8)
+            } label: {
+                Label("Sign in with Email", systemImage: "envelope.fill")
+                    .frame(maxWidth: .infinity)
             }
-                            .padding(.horizontal)
-                
-            // アカウント作成リンク
-                            HStack {
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            
+            HStack(spacing: 4) {
                 Text("Don't have an account?")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                Button(action: {
-                    // Sign Upモードに設定してからシートを表示
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Button {
                     emailAuthMode = .signUp
                     showEmailAuth = true
-                }) {
+                } label: {
                     Text("Sign up")
-                        .font(.caption)
-                        .foregroundColor(.blue)
+                        .font(.caption.weight(.semibold))
                 }
-                            }
-                        }
-        .padding(.vertical, 20)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
     
     // MARK: - アカウント情報セクション
-    
     private var accountInfoSection: some View {
         Group {
-            Section(header: Text("Account Information")) {
-                        if let email = authManager.userEmail {
-                            HStack {
-                                Text("Email")
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                                Text(email)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    Section {
-                        Button(action: {
-                    Task {
-                        await authManager.signOut()
-                    }
-                        }) {
-                            HStack {
-                                Spacer()
-                                Text("Sign Out")
-                                    .foregroundColor(.red)
-                                Spacer()
-                            }
-                        }
+            GroupBox("Account Information") {
+                if let email = authManager.userEmail {
+                    HStack {
+                        Text("Email")
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(email)
+                            .font(.callout)
                     }
                 }
             }
+        }
+    }
     
+    private var signOutButton: some View {
+        Button(role: .destructive) {
+            Task {
+                await authManager.signOut()
+            }
+        } label: {
+            Label("Sign Out", systemImage: "arrow.right.circle")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(.red)
+    }
 }
 
 struct ProfileView_Previews: PreviewProvider {
