@@ -12,7 +12,12 @@ class Transaction {
     var idString: String = ""
     var id: UUID {
         get {
-            UUID(uuidString: idString) ?? UUID()
+            if let uuid = UUID(uuidString: idString) {
+                return uuid
+            }
+            let newId = UUID()
+            idString = newId.uuidString   // ensure we persist a stable id
+            return newId
         }
         set {
             idString = newValue.uuidString

@@ -183,38 +183,57 @@ class SupabaseSyncManager: ObservableObject {
         let localTransactions = (try? context.fetch(transactionDescriptor)) ?? []
         let localCategories = (try? context.fetch(categoryDescriptor)) ?? []
         
-        // Supabaseに送信（upsertを使用）
-        for transaction in localTransactions {
-            let supabaseTransaction = SupabaseTransaction(from: transaction, userId: userId)
+        // Supabaseに送信（バッチ upsert でリクエスト回数を削減）
+        let supabaseTransactions = localTransactions.map { SupabaseTransaction(from: $0, userId: userId) }
+        if !supabaseTransactions.isEmpty {
             try await supabase.from("transactions")
-                .upsert(supabaseTransaction, onConflict: "id")
+                .upsert(supabaseTransactions, onConflict: "id")
                 .execute()
         }
         
-        // Categoriesはname + type + user_idの組み合わせでユニークなので、別の方法で処理
-        for category in localCategories {
-            let supabaseCategory = SupabaseCategory(from: category, userId: userId)
-            // 既存のカテゴリを検索
-            let existing: [SupabaseCategory] = try await supabase.from("categories")
-                .select()
-                .eq("user_id", value: userId.uuidString)
-                .eq("name", value: category.name)
-                .eq("type_raw_value", value: category.typeRawValue)
-                .execute()
-                .value
+        // カテゴリの同期：既存のカテゴリを検索してIDを取得してからupsert
+        var categoriesToUpsert: [SupabaseCategory] = []
+        
+        for localCategory in localCategories {
+            var supabaseCategory = SupabaseCategory(from: localCategory, userId: userId)
             
-            if existing.isEmpty {
-                // 新規作成
-                try await supabase.from("categories")
-                    .insert(supabaseCategory)
+            // IDがまだ設定されていない場合、Supabaseで既存カテゴリを検索
+            if localCategory.idString.isEmpty {
+                let existing: [SupabaseCategory] = try await supabase.from("categories")
+                    .select()
+                    .eq("user_id", value: userId.uuidString)
+                    .eq("name", value: localCategory.name)
+                    .eq("type_raw_value", value: localCategory.typeRawValue)
                     .execute()
-            } else {
-                // 更新（order_indexのみ）
-                try await supabase.from("categories")
-                    .update(["order_index": category.order])
-                    .eq("id", value: existing.first!.id.uuidString)
-                    .execute()
+                    .value
+                
+                if let existingCategory = existing.first {
+                    // 既存カテゴリのIDを使用
+                    supabaseCategory = SupabaseCategory(
+                        id: existingCategory.id,
+                        name: localCategory.name,
+                        typeRawValue: localCategory.typeRawValue,
+                        orderIndex: localCategory.order,
+                        userId: userId,
+                        createdAt: existingCategory.createdAt,
+                        updatedAt: existingCategory.updatedAt
+                    )
+                    // ローカルのカテゴリにもIDを保存
+                    localCategory.idString = existingCategory.id.uuidString
+                }
             }
+            
+            categoriesToUpsert.append(supabaseCategory)
+        }
+        
+        if !categoriesToUpsert.isEmpty {
+            // カテゴリをupsert（name + type_raw_value + user_id でユニーク）
+            try await supabase.from("categories")
+                .upsert(categoriesToUpsert, onConflict: "name,type_raw_value,user_id")
+                .execute()
+            
+            // ローカルの変更を保存
+            try? context.save()
         }
     }
     
@@ -249,17 +268,35 @@ class SupabaseSyncManager: ObservableObject {
     
     private func mergeCategories(_ supabaseCategories: [SupabaseCategory], into context: ModelContext) {
         for supabaseCategory in supabaseCategories {
-            let descriptor = FetchDescriptor<Category>(
-                predicate: #Predicate<Category> { $0.name == supabaseCategory.name && $0.typeRawValue == supabaseCategory.typeRawValue }
+            // IDで検索（優先）
+            let idDescriptor = FetchDescriptor<Category>(
+                predicate: #Predicate<Category> { $0.idString == supabaseCategory.id.uuidString }
             )
             
-            if let existing = try? context.fetch(descriptor).first {
+            if let existing = try? context.fetch(idDescriptor).first {
                 // Supabaseのデータで更新
                 existing.order = supabaseCategory.orderIndex
+                existing.name = supabaseCategory.name
+                existing.typeRawValue = supabaseCategory.typeRawValue
+                // IDが設定されていない場合は設定
+                if existing.idString.isEmpty {
+                    existing.idString = supabaseCategory.id.uuidString
+                }
             } else {
-                // 新規作成
-                let category = supabaseCategory.toCategory()
-                context.insert(category)
+                // name + type で検索（フォールバック）
+                let nameDescriptor = FetchDescriptor<Category>(
+                    predicate: #Predicate<Category> { $0.name == supabaseCategory.name && $0.typeRawValue == supabaseCategory.typeRawValue }
+                )
+                
+                if let existing = try? context.fetch(nameDescriptor).first {
+                    // 既存カテゴリにIDを設定して更新
+                    existing.idString = supabaseCategory.id.uuidString
+                    existing.order = supabaseCategory.orderIndex
+                } else {
+                    // 新規作成
+                    let category = supabaseCategory.toCategory()
+                    context.insert(category)
+                }
             }
         }
         
@@ -270,6 +307,72 @@ class SupabaseSyncManager: ObservableObject {
     
     func clearSyncError() {
         syncError = nil
+    }
+    
+    // MARK: - 重複データクリーンアップ
+    /// title/amount/date/category/type/currency が同一の取引を重複として扱い、ローカルとSupabaseから削除
+    func cleanupDuplicateTransactions() async {
+        guard let context = modelContext else {
+            await MainActor.run { syncError = "ModelContext is not available" }
+            return
+        }
+        
+        await MainActor.run {
+            isSyncing = true
+            syncError = nil
+        }
+        
+        do {
+            let descriptor = FetchDescriptor<Transaction>()
+            let allTransactions = (try? context.fetch(descriptor)) ?? []
+            
+            var firstSeen: [String: Transaction] = [:]
+            var duplicates: [Transaction] = []
+            
+            for tx in allTransactions {
+                let key = [
+                    tx.title,
+                    String(tx.amount),
+                    String(tx.date.timeIntervalSince1970),
+                    tx.category,
+                    tx.typeRawValue,
+                    tx.currency
+                ].joined(separator: "|")
+                
+                if firstSeen[key] == nil {
+                    firstSeen[key] = tx
+                } else {
+                    duplicates.append(tx)
+                }
+            }
+            
+            // ローカル削除
+            for dup in duplicates {
+                context.delete(dup)
+            }
+            try? context.save()
+            
+            // Supabaseからも削除（サインイン済みかつ設定済みのとき）
+            if let supabase = supabase,
+               let authManager = authManager,
+               authManager.isSignedIn,
+               !duplicates.isEmpty {
+                let ids = duplicates.map { $0.idString }
+                try await supabase.from("transactions")
+                    .delete()
+                    .in("id", value: ids)
+                    .execute()
+            }
+            
+            await MainActor.run {
+                isSyncing = false
+            }
+        } catch {
+            await MainActor.run {
+                syncError = parseSyncError(error)
+                isSyncing = false
+            }
+        }
     }
     
     private func parseSyncError(_ error: Error) -> String {

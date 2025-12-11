@@ -119,6 +119,20 @@ struct SettingsView: View {
                             .padding()
                             .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
+                        
+                        Button {
+                            Task {
+                                await syncManager.cleanupDuplicateTransactions()
+                                transactionStore.refreshTransactions()
+                                categoryManager.refreshCategories()
+                            }
+                        } label: {
+                            Label("Remove Duplicates", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .controlSize(.large)
+                        .buttonStyle(.bordered)
+                        .disabled(syncManager.isSyncing)
                     }
                     .listRowBackground(Color(.systemGroupedBackground))
                 }

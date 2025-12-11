@@ -81,7 +81,8 @@ struct SupabaseCategory: Codable {
     }
     
     init(from category: Category, userId: UUID) {
-        self.id = UUID() // 新規作成時はUUIDを生成
+        // 既存のIDがあれば使用、なければ空文字列（Supabaseが自動生成）
+        self.id = category.idString.isEmpty ? UUID() : category.id
         self.name = category.name
         self.typeRawValue = category.typeRawValue
         self.orderIndex = category.order
@@ -90,11 +91,22 @@ struct SupabaseCategory: Codable {
         self.updatedAt = nil
     }
     
+    init(id: UUID, name: String, typeRawValue: String, orderIndex: Int, userId: UUID, createdAt: Date?, updatedAt: Date?) {
+        self.id = id
+        self.name = name
+        self.typeRawValue = typeRawValue
+        self.orderIndex = orderIndex
+        self.userId = userId
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+    
     func toCategory() -> Category {
         return Category(
             name: name,
             type: CategoryType(rawValue: typeRawValue) ?? .expense,
-            order: orderIndex
+            order: orderIndex,
+            id: id
         )
     }
 }

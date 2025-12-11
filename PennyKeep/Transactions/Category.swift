@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 class Category {
+    var idString: String = ""
     var name: String = ""
     var typeRawValue: String = "expense"
     var type: CategoryType {
@@ -15,7 +16,17 @@ class Category {
     }
     var order: Int = 0
     
-    init(name: String, type: CategoryType, order: Int = 0) {
+    var id: UUID {
+        get {
+            UUID(uuidString: idString) ?? UUID()
+        }
+        set {
+            idString = newValue.uuidString
+        }
+    }
+    
+    init(name: String, type: CategoryType, order: Int = 0, id: UUID = UUID()) {
+        self.idString = id.uuidString
         self.name = name
         self.typeRawValue = type.rawValue
         self.order = order
