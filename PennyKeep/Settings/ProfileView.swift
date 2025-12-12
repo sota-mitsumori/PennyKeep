@@ -3,9 +3,13 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var authManager: SupabaseAuthManager
     @EnvironmentObject var appSettings: AppSettings
+    @EnvironmentObject var syncManager: SupabaseSyncManager
+    @EnvironmentObject var transactionStore: TransactionStore
+    @EnvironmentObject var categoryManager: CategoryManager
     @Environment(\.dismiss) var dismiss
     
     @State private var showAuthView = false
+    @State private var showSignOutConfirmation = false
     
     var body: some View {
         NavigationStack {
@@ -130,9 +134,7 @@ struct ProfileView: View {
     
     private var signOutButton: some View {
         Button(role: .destructive) {
-            Task {
-                await authManager.signOut()
-            }
+            showSignOutConfirmation = true
         } label: {
             Label("Sign Out", systemImage: "arrow.right.circle")
                 .frame(maxWidth: .infinity)
@@ -140,6 +142,36 @@ struct ProfileView: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .tint(.red)
+        .confirmationDialog("Sign Out", isPresented: $showSignOutConfirmation, titleVisibility: .visible) {
+            Button("Delete Local Data", role: .destructive) {
+                Task {
+                    await signOut(clearLocalData: true)
+                }
+            }
+            
+            Button("Keep Local Data") {
+                Task {
+                    await signOut(clearLocalData: false)
+                }
+            }
+            
+            Button("Cancel", role: .cancel) {
+                // Do nothing
+            }
+        } message: {
+            Text("What would you like to do with your local data?")
+        }
+    }
+    
+    private func signOut(clearLocalData: Bool) async {
+        if clearLocalData {
+            // ローカルデータを削除してからサインアウト
+            await syncManager.clearLocalData()
+            transactionStore.refreshTransactions()
+            categoryManager.refreshCategories()
+        }
+        // サインアウト
+        await authManager.signOut()
     }
 }
 
@@ -148,5 +180,8 @@ struct ProfileView_Previews: PreviewProvider {
         ProfileView()
             .environmentObject(SupabaseAuthManager())
             .environmentObject(AppSettings())
+            .environmentObject(SupabaseSyncManager())
+            .environmentObject(TransactionStore())
+            .environmentObject(CategoryManager())
     }
 }

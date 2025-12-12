@@ -16,6 +16,7 @@ struct AppInitializer: View {
     }
     
     @State private var showAuthView = false
+    @State private var hasCheckedInitialSync = false
     
     var body: some View {
         Group {
@@ -31,6 +32,30 @@ struct AppInitializer: View {
                         if !authManager.isSignedIn && !showAuthView {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 showAuthView = true
+                            }
+                        }
+                        
+                        // Check if user is already signed in on app launch and sync
+                        // Use normal sync (not forceFullSync) since this device may have local data
+                        if authManager.isSignedIn && !hasCheckedInitialSync {
+                            hasCheckedInitialSync = true
+                            Task {
+                                await syncManager.manualSync(forceFullSync: false)
+                                // Refresh data after sync
+                                transactionStore.refreshTransactions()
+                                categoryManager.refreshCategories()
+                            }
+                        }
+                    }
+                    .onChange(of: authManager.isSignedIn) { signedIn in
+                        if signedIn {
+                            // User just signed in - sync all data from Supabase (force full sync)
+                            // This ensures data from other devices is downloaded
+                            Task {
+                                await syncManager.manualSync(forceFullSync: true)
+                                // Refresh data after sync
+                                transactionStore.refreshTransactions()
+                                categoryManager.refreshCategories()
                             }
                         }
                     }

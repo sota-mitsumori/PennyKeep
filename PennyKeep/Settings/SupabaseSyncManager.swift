@@ -77,7 +77,8 @@ class SupabaseSyncManager: ObservableObject {
     // MARK: - 同期処理
     
     /// 手動同期（双方向）
-    func manualSync() async {
+    /// - Parameter forceFullSync: trueの場合、最終同期日時を無視して全データを取得（他端末からの初回ログイン時など）
+    func manualSync(forceFullSync: Bool = false) async {
         guard let context = modelContext else {
             await MainActor.run {
                 syncError = "ModelContext is not available"
@@ -111,7 +112,7 @@ class SupabaseSyncManager: ObservableObject {
             let userId = session.user.id
             
             // 1. Supabaseから最新データを取得してローカルに同期
-            try await syncFromSupabase(to: context, userId: userId)
+            try await syncFromSupabase(to: context, userId: userId, forceFullSync: forceFullSync)
             
             // 2. ローカルの変更をSupabaseに送信
             try await syncToSupabase(from: context, userId: userId)
@@ -136,11 +137,15 @@ class SupabaseSyncManager: ObservableObject {
     }
     
     /// Supabaseからデータを取得してローカルに同期
-    private func syncFromSupabase(to context: ModelContext, userId: UUID) async throws {
+    /// - Parameters:
+    ///   - context: ModelContext
+    ///   - userId: ユーザーID
+    ///   - forceFullSync: trueの場合、最終同期日時を無視して全データを取得
+    private func syncFromSupabase(to context: ModelContext, userId: UUID, forceFullSync: Bool = false) async throws {
         guard let supabase = supabase else { return }
         
         // 最終同期日時を取得
-        let lastSync = UserDefaults.standard.object(forKey: lastSyncDateKey) as? Date
+        let lastSync = forceFullSync ? nil : UserDefaults.standard.object(forKey: lastSyncDateKey) as? Date
         
         // Transactionsを取得
         var transactionQuery = supabase.from("transactions")
@@ -307,6 +312,45 @@ class SupabaseSyncManager: ObservableObject {
     
     func clearSyncError() {
         syncError = nil
+    }
+    
+    // MARK: - データクリア
+    
+    /// ローカルデータを全てクリア（サインアウト時など）
+    func clearLocalData() async {
+        guard let context = modelContext else {
+            print("⚠️ ModelContext is not available for clearing data")
+            return
+        }
+        
+        await MainActor.run {
+            do {
+                // 全てのトランザクションを削除
+                let transactionDescriptor = FetchDescriptor<Transaction>()
+                let transactions = (try? context.fetch(transactionDescriptor)) ?? []
+                for transaction in transactions {
+                    context.delete(transaction)
+                }
+                
+                // 全てのカテゴリを削除
+                let categoryDescriptor = FetchDescriptor<Category>()
+                let categories = (try? context.fetch(categoryDescriptor)) ?? []
+                for category in categories {
+                    context.delete(category)
+                }
+                
+                // 変更を保存
+                try? context.save()
+                
+                // 最終同期日時もクリア
+                UserDefaults.standard.removeObject(forKey: lastSyncDateKey)
+                lastSyncDate = nil
+                
+                print("✅ Local data cleared")
+            } catch {
+                print("❌ Failed to clear local data: \(error)")
+            }
+        }
     }
     
     // MARK: - 重複データクリーンアップ

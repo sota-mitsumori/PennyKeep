@@ -164,6 +164,9 @@ struct SettingsView: View {
                 ProfileView()
                     .environmentObject(authManager)
                     .environmentObject(appSettings)
+                    .environmentObject(syncManager)
+                    .environmentObject(transactionStore)
+                    .environmentObject(categoryManager)
             }
             .onAppear {
                 // Check connection status when view appears
