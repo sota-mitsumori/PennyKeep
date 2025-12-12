@@ -163,6 +163,7 @@ struct SettingsView: View {
             .sheet(isPresented: $showProfile) {
                 ProfileView()
                     .environmentObject(authManager)
+                    .environmentObject(appSettings)
             }
             .onAppear {
                 // Check connection status when view appears

@@ -2,10 +2,10 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var authManager: SupabaseAuthManager
+    @EnvironmentObject var appSettings: AppSettings
     @Environment(\.dismiss) var dismiss
     
-    @State private var showEmailAuth = false
-    @State private var emailAuthMode: EmailAuthMode = .signIn
+    @State private var showAuthView = false
     
     var body: some View {
         NavigationStack {
@@ -32,12 +32,10 @@ struct ProfileView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showEmailAuth, onDismiss: {
-                // シートが閉じられた時に状態をリセット
-                emailAuthMode = .signIn
-            }) {
-                EmailAuthView(mode: emailAuthMode)
+            .sheet(isPresented: $showAuthView) {
+                BeautifulAuthView()
                     .environmentObject(authManager)
+                    .environmentObject(appSettings)
             }
         }
     }
@@ -100,27 +98,13 @@ struct ProfileView: View {
                 .foregroundColor(.secondary)
             
             Button {
-                emailAuthMode = .signIn
-                showEmailAuth = true
+                showAuthView = true
             } label: {
-                Label("Sign in with Email", systemImage: "envelope.fill")
+                Label("Sign in or Sign up", systemImage: "person.circle.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            
-            HStack(spacing: 4) {
-                Text("Don't have an account?")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Button {
-                    emailAuthMode = .signUp
-                    showEmailAuth = true
-                } label: {
-                    Text("Sign up")
-                        .font(.caption.weight(.semibold))
-                }
-            }
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -163,5 +147,6 @@ struct ProfileView_Previews: PreviewProvider {
     static var previews: some View {
         ProfileView()
             .environmentObject(SupabaseAuthManager())
+            .environmentObject(AppSettings())
     }
 }
