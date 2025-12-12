@@ -226,17 +226,16 @@ struct BeautifulAuthView: View {
                             HStack {
                                 if authManager.isLoading {
                                     ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .progressViewStyle(CircularProgressViewStyle(tint: Color(.systemBackground)))
                                 } else {
                                     Text(isSignUpMode ? "Sign Up" : "Sign In")
                                         .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Color(.systemBackground))
                                 }
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(Color.primary)
-                            .foregroundColor(Color(.systemBackground))
                             .cornerRadius(16)
                         }
                         .disabled(!isFormValid || authManager.isLoading)
@@ -405,3 +404,4 @@ struct BeautifulAuthView: View {
         .environmentObject(SupabaseAuthManager())
         .environmentObject(AppSettings())
 }
+

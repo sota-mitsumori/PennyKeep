@@ -18,6 +18,9 @@ struct AppInitializer: View {
     @State private var showAuthView = false
     @State private var hasCheckedInitialSync = false
     
+    // UserDefaultsキー: 初回ログインシート表示フラグ
+    private let hasShownInitialAuthSheetKey = "hasShownInitialAuthSheet"
+    
     var body: some View {
         Group {
             if isInitialized {
@@ -28,10 +31,12 @@ struct AppInitializer: View {
                     .environmentObject(syncManager)
                     .environmentObject(authManager)
                     .onAppear {
-                        // Show auth view if not signed in (only once)
-                        if !authManager.isSignedIn && !showAuthView {
+                        // Show auth view if not signed in (only once, first time app is opened)
+                        let hasShownBefore = UserDefaults.standard.bool(forKey: hasShownInitialAuthSheetKey)
+                        if !authManager.isSignedIn && !hasShownBefore && !showAuthView {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 showAuthView = true
+                                UserDefaults.standard.set(true, forKey: hasShownInitialAuthSheetKey)
                             }
                         }
                         
