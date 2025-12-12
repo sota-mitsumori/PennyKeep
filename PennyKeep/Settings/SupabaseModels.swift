@@ -13,6 +13,7 @@ struct SupabaseTransaction: Codable {
     let category: String
     let typeRawValue: String
     let currency: String
+    let paymentMethodRawValue: String?
     let userId: UUID
     let createdAt: Date?
     let updatedAt: Date?
@@ -26,6 +27,7 @@ struct SupabaseTransaction: Codable {
         case category
         case typeRawValue = "type_raw_value"
         case currency
+        case paymentMethodRawValue = "payment_method"
         case userId = "user_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
@@ -40,12 +42,14 @@ struct SupabaseTransaction: Codable {
         self.category = transaction.category
         self.typeRawValue = transaction.typeRawValue
         self.currency = transaction.currency
+        self.paymentMethodRawValue = transaction.paymentMethodRawValue
         self.userId = userId
         self.createdAt = nil
         self.updatedAt = nil
     }
     
     func toTransaction() -> Transaction {
+        let paymentMethod = PaymentMethod(rawValue: paymentMethodRawValue ?? PaymentMethod.cash.rawValue) ?? .cash
         return Transaction(
             id: id,
             title: title,
@@ -54,7 +58,8 @@ struct SupabaseTransaction: Codable {
             date: date,
             category: category,
             type: TransactionType(rawValue: typeRawValue) ?? .expense,
-            currency: currency
+            currency: currency,
+            paymentMethod: paymentMethod
         )
     }
 }

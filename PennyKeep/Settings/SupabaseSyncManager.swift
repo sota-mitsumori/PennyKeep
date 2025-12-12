@@ -261,6 +261,9 @@ class SupabaseSyncManager: ObservableObject {
                 existing.category = supabaseTransaction.category
                 existing.typeRawValue = supabaseTransaction.typeRawValue
                 existing.currency = supabaseTransaction.currency
+                if let paymentMethodValue = supabaseTransaction.paymentMethodRawValue {
+                    existing.paymentMethodRawValue = paymentMethodValue
+                }
             } else {
                 // 新規作成
                 let transaction = supabaseTransaction.toTransaction()

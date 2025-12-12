@@ -56,6 +56,7 @@ struct AddTransactionView: View {
             editingTransaction.category = selectedCategory
             editingTransaction.type = transactionType
             editingTransaction.currency = transactionCurrency
+            editingTransaction.paymentMethod = selectedPaymentMethod
             
             transactionStore.updateTransaction(editingTransaction)
         } else {
@@ -67,7 +68,8 @@ struct AddTransactionView: View {
                 date: transactionDate,
                 category: selectedCategory,
                 type: transactionType,
-                currency: transactionCurrency
+                currency: transactionCurrency,
+                paymentMethod: selectedPaymentMethod
             )
             transactionStore.addTransaction(newTransaction)
         }
@@ -85,6 +87,7 @@ struct AddTransactionView: View {
     @State private var selectedCategory = ""
     @State private var transactionDate: Date
     @State private var transactionType: TransactionType = .expense
+    @State private var selectedPaymentMethod: PaymentMethod = .cash
     @State private var activeSheet: ActiveSheet?
 
     init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedData: Binding<(title: String, amount: String, date: Date)?>) {
@@ -167,6 +170,20 @@ struct AddTransactionView: View {
                     DatePicker("Date", selection: $transactionDate, displayedComponents: .date)
                         .datePickerStyle(CompactDatePickerStyle())
                 }
+                
+                Section(header: Text("Payment Method")) {
+                    Picker("Payment Method", selection: $selectedPaymentMethod) {
+                        ForEach(PaymentMethod.allCases, id: \.self) { method in
+                            HStack {
+                                Image(systemName: method.iconName)
+                                    .font(.system(size: 14))
+                                Text(method.displayName)
+                            }
+                            .tag(method)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                }
 
                 Section(header: Text("Category")) {
                     Picker("Category", selection: $selectedCategory) {
@@ -248,6 +265,7 @@ struct AddTransactionView: View {
                     transactionType = transaction.type
                     selectedCategory = transaction.category
                     transactionCurrency = transaction.currency
+                    selectedPaymentMethod = transaction.paymentMethod
                 } else {
                     if let data = scannedData {
                         title = data.title
