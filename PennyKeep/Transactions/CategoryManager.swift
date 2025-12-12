@@ -14,6 +14,7 @@ class CategoryManager: ObservableObject {
         }
     }
     var modelContext: ModelContext?
+    var syncManager: SupabaseSyncManager?
     
     // Static reference to the main model context
     private static var sharedModelContext: ModelContext?
@@ -33,6 +34,10 @@ class CategoryManager: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             self?.objectWillChange.send()
         }
+    }
+    
+    func setSyncManager(_ syncManager: SupabaseSyncManager) {
+        self.syncManager = syncManager
     }
     
     private func initializeDefaultCategoriesIfNeeded() {
@@ -207,6 +212,11 @@ class CategoryManager: ObservableObject {
         do {
             try context.save()
             print("Successfully added expense category: \(trimmed)")
+            
+            // Supabaseに同期（バックグラウンド）
+            Task {
+                await syncManager?.manualSync()
+            }
         } catch {
             print("Failed to save expense category: \(error)")
         }
@@ -232,6 +242,11 @@ class CategoryManager: ObservableObject {
         do {
             try context.save()
             print("Expense category deleted successfully")
+            
+            // Supabaseに同期（バックグラウンド）
+            Task {
+                await syncManager?.manualSync()
+            }
         } catch {
             print("Failed to delete expense category: \(error)")
         }
@@ -277,6 +292,11 @@ class CategoryManager: ObservableObject {
         do {
             try context.save()
             print("Successfully added income category: \(trimmed)")
+            
+            // Supabaseに同期（バックグラウンド）
+            Task {
+                await syncManager?.manualSync()
+            }
         } catch {
             print("Failed to save income category: \(error)")
         }
@@ -302,6 +322,11 @@ class CategoryManager: ObservableObject {
         do {
             try context.save()
             print("Income category deleted successfully")
+            
+            // Supabaseに同期（バックグラウンド）
+            Task {
+                await syncManager?.manualSync()
+            }
         } catch {
             print("Failed to delete income category: \(error)")
         }

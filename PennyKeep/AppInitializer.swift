@@ -5,8 +5,8 @@ struct AppInitializer: View {
     @StateObject private var transactionStore = TransactionStore()
     @StateObject private var categoryManager = CategoryManager()
     @StateObject private var appSettings = AppSettings()
-    @StateObject private var syncManager = SyncManager()
-    @StateObject private var authManager = AuthenticationManager()
+    @StateObject private var syncManager = SupabaseSyncManager()
+    @StateObject private var authManager = SupabaseAuthManager()
     
     let modelContainer: ModelContainer
     @State private var isInitialized = false
@@ -14,6 +14,12 @@ struct AppInitializer: View {
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
     }
+    
+    @State private var showAuthView = false
+    @State private var hasCheckedInitialSync = false
+    
+    // UserDefaultsキー: 初回ログインシート表示フラグ
+    private let hasShownInitialAuthSheetKey = "hasShownInitialAuthSheet"
     
     var body: some View {
         Group {
@@ -24,6 +30,49 @@ struct AppInitializer: View {
                     .environmentObject(appSettings)
                     .environmentObject(syncManager)
                     .environmentObject(authManager)
+                    .onAppear {
+                        // Show auth view if not signed in (only once, first time app is opened)
+                        let hasShownBefore = UserDefaults.standard.bool(forKey: hasShownInitialAuthSheetKey)
+                        if !authManager.isSignedIn && !hasShownBefore && !showAuthView {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                showAuthView = true
+                                UserDefaults.standard.set(true, forKey: hasShownInitialAuthSheetKey)
+                            }
+                        }
+                        
+                        // Check if user is already signed in on app launch and sync
+                        // Use normal sync (not forceFullSync) since this device may have local data
+                        if authManager.isSignedIn && !hasCheckedInitialSync {
+                            hasCheckedInitialSync = true
+                            Task {
+                                await syncManager.manualSync(forceFullSync: false)
+                                // Refresh data after sync
+                                transactionStore.refreshTransactions()
+                                categoryManager.refreshCategories()
+                            }
+                        }
+                    }
+                    .onChange(of: authManager.isSignedIn) { signedIn in
+                        if signedIn {
+                            // User just signed in - sync all data from Supabase (force full sync)
+                            // This ensures data from other devices is downloaded
+                            Task {
+                                await syncManager.manualSync(forceFullSync: true)
+                                // Refresh data after sync
+                                transactionStore.refreshTransactions()
+                                categoryManager.refreshCategories()
+                            }
+                        }
+                    }
+                    .sheet(isPresented: $showAuthView) {
+                        BeautifulAuthView()
+                            .environmentObject(authManager)
+                            .environmentObject(appSettings)
+                            .onDisappear {
+                                // Mark as shown so it doesn't appear again
+                                showAuthView = false
+                            }
+                    }
             } else {
                 ProgressView("Loading...")
                     .onAppear {
@@ -39,13 +88,13 @@ struct AppInitializer: View {
         // Perform migration from UserDefaults to SwiftData FIRST
         DataMigration.migrateFromUserDefaults(to: context)
         
-        // Fix existing data: ensure typeRawValue is set correctly
-        fixTransactionTypeRawValues(in: context)
-        
         // Set up the stores with SwiftData context
         transactionStore.setModelContext(context)
+        transactionStore.setSyncManager(syncManager)
         categoryManager.setModelContext(context)
+        categoryManager.setSyncManager(syncManager)
         syncManager.setModelContext(context)
+        syncManager.setAuthManager(authManager)
         // AppSettings uses UserDefaults, no SwiftData context needed
         
         print("App initialized with model contexts")
@@ -56,64 +105,4 @@ struct AppInitializer: View {
         }
     }
     
-    /// Fix typeRawValue for existing transactions that might have incorrect values
-    /// Uses category to infer the correct type if typeRawValue is incorrect
-    private func fixTransactionTypeRawValues(in context: ModelContext) {
-        let descriptor = FetchDescriptor<Transaction>()
-        guard let transactions = try? context.fetch(descriptor) else {
-            return
-        }
-        
-        // Get category lists to infer transaction type
-        let expenseDescriptor = FetchDescriptor<Category>(
-            predicate: #Predicate<Category> { $0.typeRawValue == "expense" }
-        )
-        let incomeDescriptor = FetchDescriptor<Category>(
-            predicate: #Predicate<Category> { $0.typeRawValue == "income" }
-        )
-        let expenseCategories = (try? context.fetch(expenseDescriptor)) ?? []
-        let incomeCategories = (try? context.fetch(incomeDescriptor)) ?? []
-        
-        let expenseCategoryNames = Set(expenseCategories.map { $0.name })
-        let incomeCategoryNames = Set(incomeCategories.map { $0.name })
-        
-        var needsSave = false
-        for transaction in transactions {
-            let currentRawValue = transaction.typeRawValue
-            
-            // Try to infer from category if typeRawValue is expense (default)
-            // This helps fix transactions that were incorrectly set to expense
-            if currentRawValue == "expense" && incomeCategoryNames.contains(transaction.category) {
-                print("Fixing transaction typeRawValue: '\(transaction.title)' category: '\(transaction.category)' from 'expense' to 'income'")
-                transaction.typeRawValue = "income"
-                needsSave = true
-            } else if currentRawValue == "income" && expenseCategoryNames.contains(transaction.category) {
-                print("Fixing transaction typeRawValue: '\(transaction.title)' category: '\(transaction.category)' from 'income' to 'expense'")
-                transaction.typeRawValue = "expense"
-                needsSave = true
-            } else if currentRawValue != "expense" && currentRawValue != "income" {
-                // If typeRawValue is invalid, infer from category
-                let inferredType: TransactionType
-                if incomeCategoryNames.contains(transaction.category) {
-                    inferredType = .income
-                } else {
-                    inferredType = .expense
-                }
-                print("Fixing invalid transaction typeRawValue: '\(transaction.title)' category: '\(transaction.category)' from '\(currentRawValue)' to '\(inferredType.rawValue)'")
-                transaction.typeRawValue = inferredType.rawValue
-                needsSave = true
-            }
-        }
-        
-        if needsSave {
-            do {
-                try context.save()
-                print("Fixed transaction typeRawValues")
-            } catch {
-                print("Failed to save fixed transaction types: \(error)")
-            }
-        } else {
-            print("All transaction typeRawValues are correct")
-        }
-    }
 }
