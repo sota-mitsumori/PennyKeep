@@ -214,7 +214,7 @@ class SupabaseAuthManager: NSObject, ObservableObject {
         } else if errorString.contains("password") && errorString.contains("weak") {
             return AuthError.weakPassword.localizedDescription
         } else if errorString.contains("email") {
-            return "メールアドレスの形式が正しくありません"
+            return "Invalid email format"
         }
         
         return error.localizedDescription
@@ -231,15 +231,15 @@ enum AuthError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .supabaseNotConfigured:
-            return "認証システムが設定されていません"
+            return "Authentication system is not configured"
         case .invalidCredentials:
-            return "メールアドレスまたはパスワードが正しくありません"
+            return "Invalid email or password"
         case .emailAlreadyExists:
-            return "このメールアドレスは既に使用されています"
+            return "This email address is already in use"
         case .weakPassword:
-            return "パスワードが弱すぎます（6文字以上）"
+            return "Password is too weak (must be at least 6 characters)"
         case .invalidRedirectURL:
-            return "リダイレクトURLが無効です"
+            return "Invalid redirect URL"
         }
     }
 }

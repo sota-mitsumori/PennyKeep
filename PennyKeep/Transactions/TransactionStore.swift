@@ -82,7 +82,7 @@ class TransactionStore: ObservableObject {
             try context.save()
             print("Transaction deleted successfully")
             
-            // Supabaseに同期（バックグラウンド）
+            // Sync to Supabase (background)
             Task {
                 await syncManager?.manualSync()
             }
@@ -90,7 +90,11 @@ class TransactionStore: ObservableObject {
             print("Failed to delete transaction: \(error)")
         }
         
-        loadTransactions() // Refresh the published array
+        // Refresh the published array on main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.loadTransactions()
+            self?.objectWillChange.send()
+        }
     }
     
     func updateTransaction(_ transaction: Transaction) {

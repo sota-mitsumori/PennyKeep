@@ -5,18 +5,21 @@ import SwiftUI
 struct TransactionsView: View {
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var appSettings: AppSettings
+    @EnvironmentObject var categoryManager: CategoryManager
     
     // Enum to manage which sheet is active. Conforms to Identifiable.
     enum ActiveSheet: Identifiable {
         case add
         case edit(Transaction)
         case scanner
+        case paypayImport
 
         var id: String {
             switch self {
             case .add: return "add"
             case .edit(let trans): return "edit-\(trans.id.uuidString)"
             case .scanner: return "scanner"
+            case .paypayImport: return "paypayImport"
             }
         }
     }
@@ -67,6 +70,9 @@ struct TransactionsView: View {
                 // Refresh transactions when view appears
                 transactionStore.refreshTransactions()
             }
+            .onChange(of: transactionStore.transactions) { _ in
+                // Refresh when transactions change (e.g., after delete)
+            }
             .sheet(item: $activeSheet) { item in
                 switch item {
                 case .add:
@@ -85,6 +91,11 @@ struct TransactionsView: View {
                             isLoading = false
                         }
                     }
+                case .paypayImport:
+                    PayPayImportView()
+                        .environmentObject(transactionStore)
+                        .environmentObject(categoryManager)
+                        .environmentObject(appSettings)
                 }
             }
         }
@@ -132,9 +143,21 @@ struct TransactionsView: View {
                                 .clipShape(Circle())
                                 .frame(width: 64, height: 64)
                         }
+                        Button(action: {
+                            activeSheet = .paypayImport
+                            isMenuExpanded = false
+                        }) {
+                            Image(systemName: "doc.text.fill")
+                                .font(.system(size: 24))
+                                .padding(20)
+                                .background(Color.accentColor)
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
+                                .frame(width: 64, height: 64)
+                        }
                     }
                     .transition(.scale)
-                    .offset(y: -80)
+                    .offset(y: -120)
                 }
                 Button(action: {
                     withAnimation {

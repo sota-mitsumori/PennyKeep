@@ -426,14 +426,14 @@ class SupabaseSyncManager: ObservableObject {
         let errorString = error.localizedDescription.lowercased()
         
         if errorString.contains("network") || errorString.contains("connection") {
-            return "ネットワークエラー。インターネット接続を確認してください。"
+            return "Network error. Please check your internet connection."
         } else if errorString.contains("unauthorized") || errorString.contains("authentication") {
-            return "認証エラー。再度ログインしてください。"
+            return "Authentication error. Please sign in again."
         } else if errorString.contains("not found") {
-            return "データが見つかりませんでした。"
+            return "Data not found."
         }
         
-        return "同期エラー: \(error.localizedDescription)"
+        return "Sync error: \(error.localizedDescription)"
     }
 }
 
