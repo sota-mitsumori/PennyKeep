@@ -89,6 +89,7 @@ struct AddTransactionView: View {
     @State private var transactionType: TransactionType = .expense
     @State private var selectedPaymentMethod: PaymentMethod = .cash
     @State private var activeSheet: ActiveSheet?
+    @State private var hasInitialized: Bool = false
 
     init(defaultDate: Date = Date(), transactionToEdit: Transaction? = nil, scannedData: Binding<(title: String, amount: String, date: Date)?>) {
         self.defaultDate = defaultDate
@@ -111,9 +112,7 @@ struct AddTransactionView: View {
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .onChange(of: transactionType) {
-                    // Refresh categories when transaction type changes
-                    categoryManager.refreshCategories()
-                    
+                    // Update category when transaction type changes
                     if transactionType == .expense {
                         selectedCategory = categoryManager.expenseCategories.first ?? ""
                     } else {
@@ -257,6 +256,13 @@ struct AddTransactionView: View {
                 }
             }
             .onAppear {
+                // Initialize fields only once
+                guard !hasInitialized else { return }
+                hasInitialized = true
+                
+                // Refresh categories
+                categoryManager.refreshCategories()
+                
                 if let transaction = transactionToEdit {
                     title = transaction.title
                     originalAmountString = String(format: "%.2f", transaction.originalAmount)
@@ -275,29 +281,17 @@ struct AddTransactionView: View {
                         transactionDate = defaultDate
                     }
                     
-                    if transactionType == .expense {
-                        selectedCategory = categoryManager.expenseCategories.first ?? ""
-                    } else {
-                        selectedCategory = categoryManager.incomeCategories.first ?? ""
+                    // Set category after a short delay to ensure categories are loaded
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        if transactionType == .expense {
+                            selectedCategory = categoryManager.expenseCategories.first ?? ""
+                        } else {
+                            selectedCategory = categoryManager.incomeCategories.first ?? ""
+                        }
                     }
                     transactionCurrency = appSettings.selectedCurrency
                 }
             }
-        }
-        .onAppear {
-            // Refresh categories when view appears
-            print("AddTransactionView appeared - refreshing categories")
-            
-            // Ensure the category manager has the model context
-            if categoryManager.modelContext == nil {
-                print("CategoryManager modelContext is nil, trying to get from environment")
-                // The model context should be available from the environment
-                // We'll need to get it from the model container
-            }
-            
-            categoryManager.refreshCategories()
-            print("Expense categories available: \(categoryManager.expenseCategories)")
-            print("Income categories available: \(categoryManager.incomeCategories)")
         }
     }
 }

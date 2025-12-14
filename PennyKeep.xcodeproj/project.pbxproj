@@ -13,10 +13,36 @@
 		BE618A1D2EE5661E00D3D35A /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A1C2EE5661E00D3D35A /* Realtime */; };
 		BE618A1F2EE5661E00D3D35A /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A1E2EE5661E00D3D35A /* Storage */; };
 		BE618A212EE5661E00D3D35A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A202EE5661E00D3D35A /* Supabase */; };
+		BE89160D2EEDDD3000D82F75 /* PennyKeepShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BE8916032EEDDD2F00D82F75 /* PennyKeepShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		BE89160B2EEDDD3000D82F75 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BE659F1D2D557B0600F9F9E4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BE8916022EEDDD2F00D82F75;
+			remoteInfo = PennyKeepShareExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BE8916122EEDDD3000D82F75 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				BE89160D2EEDDD3000D82F75 /* PennyKeepShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		BE659F252D557B0600F9F9E4 /* PennyKeep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PennyKeep.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BE8916032EEDDD2F00D82F75 /* PennyKeepShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PennyKeepShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -26,6 +52,13 @@
 				Info.plist,
 			);
 			target = BE659F242D557B0600F9F9E4 /* PennyKeep */;
+		};
+		BE8916112EEDDD3000D82F75 /* Exceptions for "PennyKeepShareExtension" folder in "PennyKeepShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BE8916022EEDDD2F00D82F75 /* PennyKeepShareExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -41,6 +74,14 @@
 				BE33CAE32D8C6E510052C946 /* Exceptions for "PennyKeep" folder in "PennyKeep" target */,
 			);
 			path = PennyKeep;
+			sourceTree = "<group>";
+		};
+		BE8916042EEDDD2F00D82F75 /* PennyKeepShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BE8916112EEDDD3000D82F75 /* Exceptions for "PennyKeepShareExtension" folder in "PennyKeepShareExtension" target */,
+			);
+			path = PennyKeepShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -59,6 +100,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BE8916002EEDDD2F00D82F75 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -66,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				BE659F272D557B0600F9F9E4 /* PennyKeep */,
+				BE8916042EEDDD2F00D82F75 /* PennyKeepShareExtension */,
 				BE659F262D557B0600F9F9E4 /* Products */,
 				BE07C5212DD4F44100F43D13 /* ci_scripts */,
 			);
@@ -75,6 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				BE659F252D557B0600F9F9E4 /* PennyKeep.app */,
+				BE8916032EEDDD2F00D82F75 /* PennyKeepShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -89,10 +139,12 @@
 				BE659F212D557B0600F9F9E4 /* Sources */,
 				BE659F222D557B0600F9F9E4 /* Frameworks */,
 				BE659F232D557B0600F9F9E4 /* Resources */,
+				BE8916122EEDDD3000D82F75 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				BE89160C2EEDDD3000D82F75 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				BE07C5212DD4F44100F43D13 /* ci_scripts */,
@@ -111,6 +163,28 @@
 			productReference = BE659F252D557B0600F9F9E4 /* PennyKeep.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BE8916022EEDDD2F00D82F75 /* PennyKeepShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE89160E2EEDDD3000D82F75 /* Build configuration list for PBXNativeTarget "PennyKeepShareExtension" */;
+			buildPhases = (
+				BE8915FF2EEDDD2F00D82F75 /* Sources */,
+				BE8916002EEDDD2F00D82F75 /* Frameworks */,
+				BE8916012EEDDD2F00D82F75 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BE8916042EEDDD2F00D82F75 /* PennyKeepShareExtension */,
+			);
+			name = PennyKeepShareExtension;
+			packageProductDependencies = (
+			);
+			productName = PennyKeepShareExtension;
+			productReference = BE8916032EEDDD2F00D82F75 /* PennyKeepShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -118,11 +192,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1610;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					BE659F242D557B0600F9F9E4 = {
 						CreatedOnToolsVersion = 16.1;
+					};
+					BE8916022EEDDD2F00D82F75 = {
+						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -144,12 +221,20 @@
 			projectRoot = "";
 			targets = (
 				BE659F242D557B0600F9F9E4 /* PennyKeep */,
+				BE8916022EEDDD2F00D82F75 /* PennyKeepShareExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		BE659F232D557B0600F9F9E4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE8916012EEDDD2F00D82F75 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -166,7 +251,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BE8915FF2EEDDD2F00D82F75 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BE89160C2EEDDD3000D82F75 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BE8916022EEDDD2F00D82F75 /* PennyKeepShareExtension */;
+			targetProxy = BE89160B2EEDDD3000D82F75 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		BE659F312D557B0800F9F9E4 /* Debug */ = {
@@ -378,6 +478,72 @@
 			};
 			name = Release;
 		};
+		BE89160F2EEDDD3000D82F75 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PennyKeepShareExtension/PennyKeepShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PennyKeepShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PennyKeep;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.3.4;
+				PRODUCT_BUNDLE_IDENTIFIER = "io.github.sota-mitsumori.PennyKeep.PennyKeepShareExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		BE8916102EEDDD3000D82F75 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PennyKeepShareExtension/PennyKeepShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PennyKeepShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PennyKeep;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.3.4;
+				PRODUCT_BUNDLE_IDENTIFIER = "io.github.sota-mitsumori.PennyKeep.PennyKeepShareExtension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -395,6 +561,15 @@
 			buildConfigurations = (
 				BE659F342D557B0800F9F9E4 /* Debug */,
 				BE659F352D557B0800F9F9E4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BE89160E2EEDDD3000D82F75 /* Build configuration list for PBXNativeTarget "PennyKeepShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE89160F2EEDDD3000D82F75 /* Debug */,
+				BE8916102EEDDD3000D82F75 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

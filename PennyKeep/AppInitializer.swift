@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct AppInitializer: View {
     @StateObject private var transactionStore = TransactionStore()
@@ -17,9 +18,14 @@ struct AppInitializer: View {
     
     @State private var showAuthView = false
     @State private var hasCheckedInitialSync = false
+    @State private var showPayPayImport = false
+    @State private var pendingCSVURL: URL?
     
     // UserDefaultsキー: 初回ログインシート表示フラグ
     private let hasShownInitialAuthSheetKey = "hasShownInitialAuthSheet"
+    
+    // App Group identifier
+    private let appGroupIdentifier = "group.com.pennykeep"
     
     var body: some View {
         Group {
@@ -51,6 +57,19 @@ struct AppInitializer: View {
                                 categoryManager.refreshCategories()
                             }
                         }
+                        
+                        // Check for incoming PayPay CSV from Share Extension
+                        checkForIncomingPayPayCSV()
+                    }
+                    .onChange(of: isInitialized) { _ in
+                        if isInitialized {
+                            // Check for incoming PayPay CSV when app becomes initialized
+                            checkForIncomingPayPayCSV()
+                        }
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                        // Check for incoming PayPay CSV when app enters foreground
+                        checkForIncomingPayPayCSV()
                     }
                     .onChange(of: authManager.isSignedIn) { signedIn in
                         if signedIn {
@@ -72,6 +91,18 @@ struct AppInitializer: View {
                                 // Mark as shown so it doesn't appear again
                                 showAuthView = false
                             }
+                    }
+                    .sheet(isPresented: $showPayPayImport) {
+                        if let csvURL = pendingCSVURL {
+                            PayPayImportView(csvURL: csvURL)
+                                .environmentObject(transactionStore)
+                                .environmentObject(categoryManager)
+                                .environmentObject(appSettings)
+                                .onDisappear {
+                                    // Clear the flag after import view is dismissed
+                                    clearIncomingPayPayCSVFlag()
+                                }
+                        }
                     }
             } else {
                 ProgressView("Loading...")
@@ -103,6 +134,56 @@ struct AppInitializer: View {
         DispatchQueue.main.async {
             isInitialized = true
         }
+    }
+    
+    private func checkForIncomingPayPayCSV() {
+        guard let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier) else {
+            print("Failed to access shared UserDefaults")
+            return
+        }
+        
+        let hasIncomingCSV = sharedDefaults.bool(forKey: "hasIncomingPayPayCSV")
+        
+        if hasIncomingCSV {
+            // Get the file name
+            guard let fileName = sharedDefaults.string(forKey: "incomingPayPayCSVFileName") else {
+                print("No file name found for incoming CSV")
+                clearIncomingPayPayCSVFlag()
+                return
+            }
+            
+            // Get the file from shared container
+            guard let sharedContainerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
+                print("Failed to get shared container URL")
+                clearIncomingPayPayCSVFlag()
+                return
+            }
+            
+            let fileURL = sharedContainerURL.appendingPathComponent("IncomingPayPayCSV").appendingPathComponent(fileName)
+            
+            // Check if file exists
+            guard FileManager.default.fileExists(atPath: fileURL.path) else {
+                print("File does not exist at: \(fileURL.path)")
+                clearIncomingPayPayCSVFlag()
+                return
+            }
+            
+            // Set the pending CSV URL and show import view
+            pendingCSVURL = fileURL
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showPayPayImport = true
+            }
+        }
+    }
+    
+    private func clearIncomingPayPayCSVFlag() {
+        guard let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier) else {
+            return
+        }
+        sharedDefaults.removeObject(forKey: "hasIncomingPayPayCSV")
+        sharedDefaults.removeObject(forKey: "incomingPayPayCSVFileName")
+        sharedDefaults.synchronize()
+        pendingCSVURL = nil
     }
     
 }

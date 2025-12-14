@@ -7,6 +7,8 @@ struct PayPayImportView: View {
     @EnvironmentObject var categoryManager: CategoryManager
     @EnvironmentObject var appSettings: AppSettings
     
+    let csvURL: URL?
+    
     @State private var showSuccessAlert = false
     @State private var savedCount = 0
     
@@ -16,6 +18,10 @@ struct PayPayImportView: View {
     @State private var isProcessing = false
     @State private var errorMessage: String?
     @State private var transactionToEdit: PayPayTransaction?
+    
+    init(csvURL: URL? = nil) {
+        self.csvURL = csvURL
+    }
     
     var body: some View {
         NavigationView {
@@ -106,6 +112,12 @@ struct PayPayImportView: View {
             }
             .navigationTitle("PayPay Transactions")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                // If CSV URL is provided (from Share Extension), load it automatically
+                if let url = csvURL {
+                    loadCSVFromURL(url)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -155,6 +167,29 @@ struct PayPayImportView: View {
         }
     }
     
+    private func loadCSVFromURL(_ url: URL) {
+        isProcessing = true
+        errorMessage = nil
+        
+        // Read file
+        do {
+            let csvContent = try String(contentsOf: url, encoding: .utf8)
+            let transactions = PayPayCSVParser.parse(csvContent)
+            
+            DispatchQueue.main.async {
+                self.importedTransactions = transactions
+                // Select all transactions by default
+                self.selectedTransactions = Set(transactions.map { $0.id })
+                self.isProcessing = false
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.errorMessage = "Failed to read file: \(error.localizedDescription)"
+                self.isProcessing = false
+            }
+        }
+    }
+    
     private func handleFileSelection(_ result: Result<[URL], Error>) {
         isProcessing = true
         errorMessage = nil
@@ -180,22 +215,7 @@ struct PayPayImportView: View {
                 url.stopAccessingSecurityScopedResource()
             }
             
-            // Read file
-            do {
-                let csvContent = try String(contentsOf: url, encoding: .utf8)
-                let transactions = PayPayCSVParser.parse(csvContent)
-                
-                DispatchQueue.main.async {
-                    self.importedTransactions = transactions
-                    self.selectedTransactions = Set(transactions.map { $0.id })
-                    self.isProcessing = false
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Failed to read file: \(error.localizedDescription)"
-                    self.isProcessing = false
-                }
-            }
+            loadCSVFromURL(url)
             
         case .failure(let error):
             DispatchQueue.main.async {

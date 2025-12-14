@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>NSExtensionActivationRule</key>
+			<dict>
+				<key>NSExtensionActivationSupportsFileWithMaxCount</key>
+				<integer>1</integer>
+				<key>NSExtensionActivationSupportsText</key>
+				<false/>
+				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+				<integer>0</integer>
+				<key>NSExtensionActivationSupportsWebPageWithMaxCount</key>
+				<integer>0</integer>
+				<key>NSExtensionActivationSupportsAttachmentsWithMaxCount</key>
+				<integer>1</integer>
+				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
+				<integer>0</integer>
+				<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
+				<integer>0</integer>
+			</dict>
+		</dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.share-services</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
+	</dict>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>CSV File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.comma-separated-values-text</string>
+				<string>public.text</string>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>public.comma-separated-values-text</string>
+			<key>UTTypeDescription</key>
+			<string>CSV File</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>csv</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>CFBundleDisplayName</key>
+	<string>PennyKeep</string>
+	<key>CFBundleName</key>
+	<string>PennyKeepShareExtension</string>
+</dict>
+</plist>

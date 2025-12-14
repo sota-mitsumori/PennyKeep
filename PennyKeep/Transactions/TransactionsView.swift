@@ -92,7 +92,7 @@ struct TransactionsView: View {
                         }
                     }
                 case .paypayImport:
-                    PayPayImportView()
+                    PayPayImportView(csvURL: nil)
                         .environmentObject(transactionStore)
                         .environmentObject(categoryManager)
                         .environmentObject(appSettings)
