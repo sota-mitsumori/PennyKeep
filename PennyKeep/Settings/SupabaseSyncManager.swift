@@ -111,11 +111,12 @@ class SupabaseSyncManager: ObservableObject {
             let session = try await supabase.auth.session
             let userId = session.user.id
             
-            // 1. Supabaseから最新データを取得してローカルに同期
-            try await syncFromSupabase(to: context, userId: userId, forceFullSync: forceFullSync)
-            
-            // 2. ローカルの変更をSupabaseに送信
+            // 1. ローカルの変更を先にSupabaseに送信（これにより、ローカルの変更が確実に保存される）
             try await syncToSupabase(from: context, userId: userId)
+            
+            // 2. Supabaseから最新データを取得してローカルに同期
+            // ローカルの変更を送信した後なので、Supabaseのデータで上書きされても問題ない
+            try await syncFromSupabase(to: context, userId: userId, forceFullSync: forceFullSync)
             
             // 3. 最終同期日時を更新
             let now = Date()
@@ -245,6 +246,9 @@ class SupabaseSyncManager: ObservableObject {
     // MARK: - データマージ
     
     private func mergeTransactions(_ supabaseTransactions: [SupabaseTransaction], into context: ModelContext) {
+        // 最終同期日時を取得（これより新しいSupabaseデータのみを適用）
+        let lastSync = UserDefaults.standard.object(forKey: lastSyncDateKey) as? Date
+        
         for supabaseTransaction in supabaseTransactions {
             // 既存のトランザクションを検索
             let descriptor = FetchDescriptor<Transaction>(
@@ -252,17 +256,35 @@ class SupabaseSyncManager: ObservableObject {
             )
             
             if let existing = try? context.fetch(descriptor).first {
-                // Supabaseのデータで更新（競合解決はSupabase側のupdated_atを優先）
-                // 簡略化のため、常にSupabaseのデータで更新
-                existing.title = supabaseTransaction.title
-                existing.amount = supabaseTransaction.amount
-                existing.originalAmount = supabaseTransaction.originalAmount
-                existing.date = supabaseTransaction.date
-                existing.category = supabaseTransaction.category
-                existing.typeRawValue = supabaseTransaction.typeRawValue
-                existing.currency = supabaseTransaction.currency
-                if let paymentMethodValue = supabaseTransaction.paymentMethodRawValue {
-                    existing.paymentMethodRawValue = paymentMethodValue
+                // Supabaseのupdated_atが最終同期日時より新しい場合のみ更新
+                // これにより、ローカルの変更がSupabaseの古いデータで上書きされることを防ぐ
+                if let supabaseUpdatedAt = supabaseTransaction.updatedAt,
+                   let lastSync = lastSync,
+                   supabaseUpdatedAt > lastSync {
+                    // Supabaseのデータで更新（最終同期以降に更新されたもののみ）
+                    existing.title = supabaseTransaction.title
+                    existing.amount = supabaseTransaction.amount
+                    existing.originalAmount = supabaseTransaction.originalAmount
+                    existing.date = supabaseTransaction.date
+                    existing.category = supabaseTransaction.category
+                    existing.typeRawValue = supabaseTransaction.typeRawValue
+                    existing.currency = supabaseTransaction.currency
+                    if let paymentMethodValue = supabaseTransaction.paymentMethodRawValue {
+                        existing.paymentMethodRawValue = paymentMethodValue
+                    }
+                }
+                // 最終同期日時がない場合（初回同期）は、常にSupabaseのデータで更新
+                else if lastSync == nil {
+                    existing.title = supabaseTransaction.title
+                    existing.amount = supabaseTransaction.amount
+                    existing.originalAmount = supabaseTransaction.originalAmount
+                    existing.date = supabaseTransaction.date
+                    existing.category = supabaseTransaction.category
+                    existing.typeRawValue = supabaseTransaction.typeRawValue
+                    existing.currency = supabaseTransaction.currency
+                    if let paymentMethodValue = supabaseTransaction.paymentMethodRawValue {
+                        existing.paymentMethodRawValue = paymentMethodValue
+                    }
                 }
             } else {
                 // 新規作成

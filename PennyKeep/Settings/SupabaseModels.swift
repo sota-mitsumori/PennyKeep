@@ -45,7 +45,8 @@ struct SupabaseTransaction: Codable {
         self.paymentMethodRawValue = transaction.paymentMethodRawValue
         self.userId = userId
         self.createdAt = nil
-        self.updatedAt = nil
+        // updatedAtを現在の日時に設定して、Supabaseでupdated_atが正しく更新されるようにする
+        self.updatedAt = Date()
     }
     
     func toTransaction() -> Transaction {
