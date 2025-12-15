@@ -49,11 +49,18 @@ struct TransactionsView: View {
                     Spacer()
                 } else {
                     List {
-                        ForEach(filteredTransactions) { transaction in
+                        ForEach(filteredTransactions.indices, id: \.self) { index in
+                            let transaction = filteredTransactions[index]
+                            
                             TransactionRow(transaction: transaction, onEdit: {
                                 activeSheet = .edit(transaction)
                             })
                         }
+                        
+                        // Always show one ad at the bottom of the list
+                        NativeAdViewContainer()
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowSeparator(.hidden)
                     }
                     .listStyle(InsetGroupedListStyle())
                     .safeAreaInset(edge: .bottom) {

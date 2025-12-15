@@ -13,6 +13,7 @@
 		BE618A1D2EE5661E00D3D35A /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A1C2EE5661E00D3D35A /* Realtime */; };
 		BE618A1F2EE5661E00D3D35A /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A1E2EE5661E00D3D35A /* Storage */; };
 		BE618A212EE5661E00D3D35A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A202EE5661E00D3D35A /* Supabase */; };
+		BE618A232EE5661E00D3D35A /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A222EE5661E00D3D35A /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 				BE618A172EE5661E00D3D35A /* Auth in Frameworks */,
 				BE618A1F2EE5661E00D3D35A /* Storage in Frameworks */,
 				BE618A1D2EE5661E00D3D35A /* Realtime in Frameworks */,
+				BE618A232EE5661E00D3D35A /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -106,6 +108,7 @@
 				BE618A1C2EE5661E00D3D35A /* Realtime */,
 				BE618A1E2EE5661E00D3D35A /* Storage */,
 				BE618A202EE5661E00D3D35A /* Supabase */,
+				BE618A222EE5661E00D3D35A /* GoogleMobileAds */,
 			);
 			productName = PennyKeep;
 			productReference = BE659F252D557B0600F9F9E4 /* PennyKeep.app */;
@@ -137,6 +140,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				BE618A212EE5661E00D3D35B /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BE659F262D557B0600F9F9E4 /* Products */;
@@ -410,6 +414,14 @@
 				minimumVersion = 2.5.1;
 			};
 		};
+		BE618A212EE5661E00D3D35B /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -442,6 +454,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		BE618A222EE5661E00D3D35A /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE618A212EE5661E00D3D35B /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
