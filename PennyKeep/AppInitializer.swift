@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import GoogleMobileAds
 
 struct AppInitializer: View {
     @StateObject private var transactionStore = TransactionStore()
@@ -84,6 +85,10 @@ struct AppInitializer: View {
     
     private func initializeApp() {
         let context = modelContainer.mainContext
+        
+        // Initialize Google Mobile Ads SDK
+        MobileAds.shared.start(completionHandler: nil)
+        print("✅ Google Mobile Ads SDK initialized")
         
         // Perform migration from UserDefaults to SwiftData FIRST
         DataMigration.migrateFromUserDefaults(to: context)
