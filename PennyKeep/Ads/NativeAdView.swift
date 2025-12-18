@@ -179,12 +179,17 @@ extension NativeAdViewController: NativeAdLoaderDelegate {
 
 // SwiftUI wrapper for easier use
 struct NativeAdViewContainer: View {
-    // IMPORTANT: Currently using TEST ad unit ID for development
-    // Before publishing, replace with production ad unit ID: "ca-app-pub-7988808089932042/3130582796"
-    let adUnitID: String
-    
-    init(adUnitID: String = "ca-app-pub-3940256099942544/3986624511") {
-        self.adUnitID = adUnitID
+    /// Ad unit ID is switched by build configuration:
+    /// - Debug: Google-provided test native ad unit ID
+    /// - Release: Your production native ad unit ID
+    private var adUnitID: String {
+        #if DEBUG
+        // Test-only unit ID that always returns test ads
+        return "ca-app-pub-3940256099942544/3986624511"
+        #else
+        // Production unit ID for Transactionんs native ads
+        return "ca-app-pub-7988808089932042/3130582796"
+        #endif
     }
     
     var body: some View {
