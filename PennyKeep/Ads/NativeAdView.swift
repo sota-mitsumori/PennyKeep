@@ -57,8 +57,11 @@ extension NativeAdViewController: NativeAdLoaderDelegate {
     func adLoader(_ adLoader: AdLoader, didReceive nativeAd: NativeAd) {
         guard let nativeAdView = nativeAdView else { return }
         
-        // Remove existing subviews
+        // Remove existing subviews from view controller's view
         view.subviews.forEach { $0.removeFromSuperview() }
+        
+        // Remove existing subviews from nativeAdView to prevent duplicates
+        nativeAdView.subviews.forEach { $0.removeFromSuperview() }
         
         // Set the native ad
         nativeAdView.nativeAd = nativeAd
