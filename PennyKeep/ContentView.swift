@@ -37,7 +37,8 @@ struct ContentView_Previews: PreviewProvider {
             .environmentObject(CategoryManager())
             .environmentObject(TransactionStore())
             .environmentObject(AppSettings())
-            .environmentObject(AuthenticationManager())
+            .environmentObject(SupabaseAuthManager())
+            .environmentObject(SupabaseSyncManager())
     }
 }
 

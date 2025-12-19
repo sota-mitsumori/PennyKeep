@@ -7,12 +7,51 @@ enum TransactionType: String, Codable, CaseIterable {
     case income
 }
 
+enum PaymentMethod: String, Codable, CaseIterable {
+    case cash = "cash"
+    case creditCard = "credit_card"
+    case debitCard = "debit_card"
+    case bankTransfer = "bank_transfer"
+    case digitalWallet = "digital_wallet"
+    case qrCode = "qr_code"
+    case other = "other"
+    
+    var displayName: String {
+        switch self {
+        case .creditCard: return "Credit Card"
+        case .debitCard: return "Debit Card"
+        case .cash: return "Cash"
+        case .bankTransfer: return "Bank Transfer"
+        case .digitalWallet: return "Digital Wallet"
+        case .qrCode: return "QR Code"
+        case .other: return "Other"
+        }
+    }
+    
+    var iconName: String {
+        switch self {
+        case .creditCard: return "creditcard.fill"
+        case .debitCard: return "creditcard.trianglebadge.exclamationmark.fill"
+        case .cash: return "banknote.fill"
+        case .bankTransfer: return "arrow.left.arrow.right.circle.fill"
+        case .digitalWallet: return "wallet.pass.fill"
+        case .qrCode: return "qrcode"
+        case .other: return "ellipsis.circle.fill"
+        }
+    }
+}
+
 @Model
 class Transaction {
     var idString: String = ""
     var id: UUID {
         get {
-            UUID(uuidString: idString) ?? UUID()
+            if let uuid = UUID(uuidString: idString) {
+                return uuid
+            }
+            let newId = UUID()
+            idString = newId.uuidString   // ensure we persist a stable id
+            return newId
         }
         set {
             idString = newValue.uuidString
@@ -34,6 +73,16 @@ class Transaction {
         }
     }
     var currency: String = "USD"
+    var paymentMethodRawValue: String = PaymentMethod.cash.rawValue
+    
+    var paymentMethod: PaymentMethod {
+        get {
+            PaymentMethod(rawValue: paymentMethodRawValue) ?? .cash
+        }
+        set {
+            paymentMethodRawValue = newValue.rawValue
+        }
+    }
 
     /// Designated initializer for creating new transactions
     init(
@@ -44,7 +93,8 @@ class Transaction {
         date: Date,
         category: String,
         type: TransactionType = .expense,
-        currency: String
+        currency: String,
+        paymentMethod: PaymentMethod = .cash
     ) {
         self.idString = id.uuidString
         self.title = title
@@ -54,6 +104,7 @@ class Transaction {
         self.category = category
         self.typeRawValue = type.rawValue
         self.currency = currency
+        self.paymentMethodRawValue = paymentMethod.rawValue
     }
 }
 

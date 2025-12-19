@@ -1,4 +1,12 @@
 import SwiftUI
+import Charts
+
+struct PaymentMethodData: Identifiable {
+    var id: String { paymentMethod.rawValue }
+    let paymentMethod: PaymentMethod
+    let amount: Double
+    let percentage: Double
+}
 
 struct HomeView: View {
     @EnvironmentObject var transactionStore: TransactionStore
@@ -23,6 +31,28 @@ struct HomeView: View {
             .reduce(0) { $0 + $1.amount }
     }
     
+    // 支払い方法別の支出データ
+    var paymentMethodData: [PaymentMethodData] {
+        let expenseTransactions = currentMonthTransactions.filter { $0.type == .expense }
+        let totalExpense = expenseTotal
+        
+        guard totalExpense > 0 else { return [] }
+        
+        var data: [PaymentMethodData] = []
+        let grouped = Dictionary(grouping: expenseTransactions) { $0.paymentMethod }
+        
+        for (method, transactions) in grouped {
+            let amount = transactions.reduce(0) { $0 + $1.amount }
+            let percentage = (amount / totalExpense) * 100
+            data.append(PaymentMethodData(
+                paymentMethod: method,
+                amount: amount,
+                percentage: percentage
+            ))
+        }
+        
+        return data.sorted { $0.amount > $1.amount }
+    }
     
     var recentTransactions: [Transaction] {
         let calendar = Calendar.current
@@ -78,6 +108,64 @@ struct HomeView: View {
                             }
                         }
                         .padding(.horizontal)
+                    }
+                    
+                    // Payment Method Breakdown section
+                    if !paymentMethodData.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Payment Methods")
+                                .font(.title2)
+                                .bold()
+                                .padding(.horizontal)
+                            
+                            // Chart
+                            Chart(paymentMethodData) { item in
+                                SectorMark(
+                                    angle: .value("Amount", item.amount),
+                                    innerRadius: .ratio(0.5),
+                                    angularInset: 2
+                                )
+                                .cornerRadius(5)
+                                .foregroundStyle(by: .value("Method", item.paymentMethod.displayName))
+                            }
+                            .frame(height: 200)
+                            .chartLegend(alignment: .center, spacing: 12)
+                            .padding()
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .cornerRadius(12)
+                            .padding(.horizontal)
+                            
+                            // List of payment methods
+                            VStack(spacing: 8) {
+                                ForEach(paymentMethodData) { item in
+                                    HStack {
+                                        Image(systemName: item.paymentMethod.iconName)
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.accentColor)
+                                            .frame(width: 30)
+                                        
+                                        Text(item.paymentMethod.displayName)
+                                            .font(.body)
+                                        
+                                        Spacer()
+                                        
+                                        VStack(alignment: .trailing, spacing: 2) {
+                                            Text(item.amount, format: .currency(code: appSettings.selectedCurrency))
+                                                .font(.headline)
+                                            Text("\(item.percentage, specifier: "%.1f")%")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(UIColor.secondarySystemBackground))
+                                    .cornerRadius(8)
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                        .padding(.vertical, 8)
                     }
                     
                     // Recent Transactions List

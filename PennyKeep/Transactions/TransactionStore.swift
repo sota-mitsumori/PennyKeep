@@ -5,6 +5,7 @@ import SwiftUI
 class TransactionStore: ObservableObject {
     @Published var transactions: [Transaction] = []
     var modelContext: ModelContext?
+    var syncManager: SupabaseSyncManager?
     
     // Static reference to the main model context
     private static var sharedModelContext: ModelContext?
@@ -17,6 +18,10 @@ class TransactionStore: ObservableObject {
         self.modelContext = context
         Self.sharedModelContext = context // Store as static reference
         loadTransactions()
+    }
+    
+    func setSyncManager(_ syncManager: SupabaseSyncManager) {
+        self.syncManager = syncManager
     }
     
     private func loadTransactions() {
@@ -43,12 +48,18 @@ class TransactionStore: ObservableObject {
             return 
         }
         
-        print("Adding transaction: \(transaction.title) - \(transaction.amount)")
+        print(
+            "Adding transaction: \(transaction.title) - \(transaction.amount)")
         context.insert(transaction)
         
         do {
             try context.save()
             print("Transaction saved successfully")
+            
+            // Supabaseに同期（バックグラウンド）
+            Task {
+                await syncManager?.manualSync()
+            }
         } catch {
             print("Failed to save transaction: \(error)")
         }
@@ -70,6 +81,11 @@ class TransactionStore: ObservableObject {
         do {
             try context.save()
             print("Transaction deleted successfully")
+            
+            // Supabaseに同期（バックグラウンド）
+            Task {
+                await syncManager?.manualSync()
+            }
         } catch {
             print("Failed to delete transaction: \(error)")
         }
@@ -85,6 +101,11 @@ class TransactionStore: ObservableObject {
         do {
             try context.save()
             print("Transaction updated successfully")
+            
+            // Supabaseに同期（バックグラウンド）
+            Task {
+                await syncManager?.manualSync()
+            }
         } catch {
             print("Failed to update transaction: \(error)")
         }

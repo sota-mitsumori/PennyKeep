@@ -1,24 +1,27 @@
 import SwiftUI
-import AuthenticationServices
 
 struct SettingsView: View {
     @EnvironmentObject var appSettings: AppSettings
-    @EnvironmentObject var syncManager: SyncManager
+    @EnvironmentObject var syncManager: SupabaseSyncManager
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var categoryManager: CategoryManager
-    @EnvironmentObject var authManager: AuthenticationManager
+    @EnvironmentObject var authManager: SupabaseAuthManager
     
-    @State private var dataCount: (transactionCount: Int, categoryCount: Int)?
     @State private var showProfile = false
     
     private var lastSyncText: String {
-        if let date = syncManager.lastSyncDate {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .short
-            formatter.timeStyle = .short
-            return formatter.string(from: date)
+        guard let date = syncManager.lastSyncDate else {
+            return "Not synced yet"
         }
-        return "Not synced yet"
+        
+        let relative = RelativeDateTimeFormatter()
+        relative.unitsStyle = .short
+        let relativeText = relative.localizedString(for: date, relativeTo: Date())
+        
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return "\(relativeText) • \(formatter.string(from: date))"
     }
     
     var body: some View {
@@ -34,105 +37,108 @@ struct SettingsView: View {
                     .pickerStyle(.automatic)
                 }
                 
-                Section(header: Text("iCloud Sync")) {
-                    // iCloud Status
-                    HStack {
-                        Text("iCloud Status:")
-                        Spacer()
-                        if syncManager.isCheckingStatus {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        } else {
-                            HStack(spacing: 4) {
-                                Image(systemName: syncManager.iCloudAccountStatus == .available ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                                    .foregroundColor(syncManager.iCloudAccountStatus == .available ? .green : .orange)
-                                Text(syncManager.iCloudStatusDescription)
+                Section(header: Text("Sync")) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(alignment: .center, spacing: 10) {
+                            Label(syncManager.isConnected ? "Connected" : "Not Connected",
+                                  systemImage: syncManager.isConnected ? "checkmark.seal.fill" : "wifi.slash")
+                            .font(.callout.weight(.medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .foregroundColor(syncManager.isConnected ? .green : .orange)
+                            .background((syncManager.isConnected ? Color.green.opacity(0.12) : Color.orange.opacity(0.12)), in: Capsule())
+                            
+                            Spacer()
+                            
+                            if syncManager.isSyncing {
+                                ProgressView()
+                                    .scaleEffect(0.9)
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Label {
+                                Text(lastSyncText)
+                                    .foregroundColor(.secondary)
+                            } icon: {
+                                Image(systemName: "clock.arrow.2.circlepath")
+                            }
+                            .font(.caption)
+                            
+                            if !authManager.isSignedIn {
+                                Label("Sign in to enable sync", systemImage: "person.crop.circle.badge.exclamationmark")
+                                    .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                         }
-                    }
-                    .font(.caption)
-                    
-                    Button(action: {
-                        Task {
-                            await syncManager.checkiCloudStatus()
-                            // Also update data count
-                            dataCount = await syncManager.checkDataInCloud()
-                        }
-                    }) {
-                        Text("Check iCloud Status")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
-                    .disabled(syncManager.isCheckingStatus)
-                    
-                    // Data count
-                    if let dataCount = dataCount {
-                        HStack {
-                            Text("Local Data:")
-                            Spacer()
-                            Text("\(dataCount.transactionCount) transactions, \(dataCount.categoryCount) categories")
-                                .foregroundColor(.secondary)
-                        }
-                        .font(.caption)
-                        .padding(.top, 4)
-                    }
-                    
-                    // Sync button
-                    Button(action: {
-                        Task {
-                            await syncManager.manualSync(authManager: authManager)
-                            // Reload data after sync attempt (success or failure)
-                            transactionStore.refreshTransactions()
-                            categoryManager.refreshCategories()
-                            // Update data count
-                            dataCount = await syncManager.checkDataInCloud()
-                        }
-                    }) {
-                        HStack {
-                            if syncManager.isSyncing {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "arrow.clockwise")
+                        
+                        Button(action: {
+                            Task {
+                                await syncManager.manualSync()
+                                // Reload data after sync attempt (success or failure)
+                                transactionStore.refreshTransactions()
+                                categoryManager.refreshCategories()
                             }
-                            Text(syncManager.isSyncing ? "Syncing..." : "Sync Now")
-                        }
-                    }
-                    .disabled(syncManager.isSyncing)
-                    
-                    if let error = syncManager.syncError {
-                        VStack(alignment: .leading, spacing: 8) {
+                        }) {
                             HStack {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.red)
-                                Text(error)
-                                    .foregroundColor(.red)
-                                    .font(.caption)
+                                Spacer()
+                                if syncManager.isSyncing {
+                                    ProgressView()
+                                        .scaleEffect(0.9)
+                                    Text("Syncing...")
+                                } else {
+                                    Image(systemName: "arrow.clockwise.circle.fill")
+                                    Text("Sync Now")
+                                }
                                 Spacer()
                             }
-                            Button(action: {
-                                syncManager.clearSyncError()
-                            }) {
-                                Text("Dismiss")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                            }
                         }
-                        .padding(.vertical, 4)
+                        .controlSize(.large)
+                        .buttonStyle(.borderedProminent)
+                        .tint(.accentColor)
+                        .disabled(syncManager.isSyncing || !authManager.isSignedIn)
+                        
+                        if let error = syncManager.syncError {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label {
+                                    Text(error)
+                                        .font(.caption)
+                                } icon: {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                }
+                                .foregroundColor(.red)
+                                
+                                Button(action: {
+                                    syncManager.clearSyncError()
+                                }) {
+                                    Text("Dismiss")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            .padding()
+                            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        
+//                        Button {
+//                            Task {
+//                                await syncManager.cleanupDuplicateTransactions()
+//                                transactionStore.refreshTransactions()
+//                                categoryManager.refreshCategories()
+//                            }
+//                        } label: {
+//                            Label("Remove Duplicates", systemImage: "trash")
+//                                .frame(maxWidth: .infinity)
+//                        }
+//                        .controlSize(.large)
+//                        .buttonStyle(.bordered)
+//                        .disabled(syncManager.isSyncing)
                     }
-                    
-                    HStack {
-                        Text("Last Sync:")
-                        Spacer()
-                        Text(lastSyncText)
-                            .foregroundColor(.secondary)
-                    }
-                    .font(.caption)
+                    .listRowBackground(Color(.systemGroupedBackground))
                 }
                 
                 Section(header: Text("Version")) {
-                    Text("Version 1.3.4 (2025.11.14)")
+                    Text("Version 1.4.0 (2025.12.20)")
                 }
             }
             .navigationTitle("Settings")
@@ -157,12 +163,15 @@ struct SettingsView: View {
             .sheet(isPresented: $showProfile) {
                 ProfileView()
                     .environmentObject(authManager)
+                    .environmentObject(appSettings)
+                    .environmentObject(syncManager)
+                    .environmentObject(transactionStore)
+                    .environmentObject(categoryManager)
             }
             .onAppear {
-                // Check iCloud status and load data count when view appears
+                // Check connection status when view appears
                 Task {
-                    await syncManager.checkiCloudStatus()
-                    dataCount = await syncManager.checkDataInCloud()
+                    await syncManager.checkConnection()
                 }
             }
         }
@@ -173,9 +182,9 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
             .environmentObject(AppSettings())
-            .environmentObject(SyncManager())
+            .environmentObject(SupabaseSyncManager())
             .environmentObject(TransactionStore())
             .environmentObject(CategoryManager())
-            .environmentObject(AuthenticationManager())
+            .environmentObject(SupabaseAuthManager())
     }
 }

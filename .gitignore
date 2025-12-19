@@ -128,6 +128,9 @@ Temporary Items
 # Logs
 *.log
 
+# Documents
+docs/
+
 # Backup files
 *.backup
 *.bak
@@ -148,6 +151,8 @@ Temporary Items
 .env.development.local
 .env.test.local
 .env.production.local
+# Environment.swift files (contain API keys and secrets)
+**/Environment.swift
 
 # SwiftData
 # Note: SwiftData stores data in the app's Documents directory

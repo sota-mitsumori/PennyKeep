@@ -6,6 +6,16 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		BE618A172EE5661E00D3D35A /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A162EE5661E00D3D35A /* Auth */; };
+		BE618A192EE5661E00D3D35A /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A182EE5661E00D3D35A /* Functions */; };
+		BE618A1B2EE5661E00D3D35A /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A1A2EE5661E00D3D35A /* PostgREST */; };
+		BE618A1D2EE5661E00D3D35A /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A1C2EE5661E00D3D35A /* Realtime */; };
+		BE618A1F2EE5661E00D3D35A /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A1E2EE5661E00D3D35A /* Storage */; };
+		BE618A212EE5661E00D3D35A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A202EE5661E00D3D35A /* Supabase */; };
+		BE618A232EE5661E00D3D35A /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = BE618A222EE5661E00D3D35A /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		BE659F252D557B0600F9F9E4 /* PennyKeep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PennyKeep.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -41,6 +51,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE618A1B2EE5661E00D3D35A /* PostgREST in Frameworks */,
+				BE618A192EE5661E00D3D35A /* Functions in Frameworks */,
+				BE618A212EE5661E00D3D35A /* Supabase in Frameworks */,
+				BE618A172EE5661E00D3D35A /* Auth in Frameworks */,
+				BE618A1F2EE5661E00D3D35A /* Storage in Frameworks */,
+				BE618A1D2EE5661E00D3D35A /* Realtime in Frameworks */,
+				BE618A232EE5661E00D3D35A /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +102,13 @@
 			);
 			name = PennyKeep;
 			packageProductDependencies = (
+				BE618A162EE5661E00D3D35A /* Auth */,
+				BE618A182EE5661E00D3D35A /* Functions */,
+				BE618A1A2EE5661E00D3D35A /* PostgREST */,
+				BE618A1C2EE5661E00D3D35A /* Realtime */,
+				BE618A1E2EE5661E00D3D35A /* Storage */,
+				BE618A202EE5661E00D3D35A /* Supabase */,
+				BE618A222EE5661E00D3D35A /* GoogleMobileAds */,
 			);
 			productName = PennyKeep;
 			productReference = BE659F252D557B0600F9F9E4 /* PennyKeep.app */;
@@ -114,6 +138,10 @@
 			);
 			mainGroup = BE659F1C2D557B0600F9F9E4;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				BE618A212EE5661E00D3D35B /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BE659F262D557B0600F9F9E4 /* Products */;
 			projectDirPath = "";
@@ -297,7 +325,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.4;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "io.github.sota-mitsumori.PennyKeep";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -340,7 +368,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.4;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "io.github.sota-mitsumori.PennyKeep";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -376,6 +404,63 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+		BE618A212EE5661E00D3D35B /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BE618A162EE5661E00D3D35A /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		BE618A182EE5661E00D3D35A /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		BE618A1A2EE5661E00D3D35A /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		BE618A1C2EE5661E00D3D35A /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		BE618A1E2EE5661E00D3D35A /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		BE618A202EE5661E00D3D35A /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE618A152EE5661E00D3D35A /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		BE618A222EE5661E00D3D35A /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE618A212EE5661E00D3D35B /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = BE659F1D2D557B0600F9F9E4 /* Project object */;
 }

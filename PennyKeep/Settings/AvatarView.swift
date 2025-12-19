@@ -34,9 +34,19 @@ struct AvatarView: View {
             .blue, .green, .orange, .purple, .pink, .red, .teal, .indigo
         ]
         
-        let hash = initials.hashValue
+        // Calculate a stable hash from the initials string
+        let hash = stableHash(initials)
         let index = abs(hash) % colors.count
         return colors[index]
+    }
+    
+    // Stable hash function that produces the same result for the same input
+    private func stableHash(_ string: String) -> Int {
+        var hash = 0
+        for char in string.utf8 {
+            hash = ((hash << 5) &- hash) &+ Int(char)
+        }
+        return hash
     }
     
     var body: some View {
