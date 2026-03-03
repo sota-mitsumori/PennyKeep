@@ -82,8 +82,10 @@ class TransactionStore: ObservableObject {
             try context.save()
             print("Transaction deleted successfully")
             
-            // Supabaseに同期（バックグラウンド）
+            // Supabaseからも削除（バックグラウンド）
             Task {
+                await syncManager?.deleteTransactionFromSupabase(transaction)
+                // 他のローカル変更もあれば同期したいので通常の同期も実行
                 await syncManager?.manualSync()
             }
         } catch {

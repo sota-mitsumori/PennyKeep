@@ -75,6 +75,35 @@ class SupabaseSyncManager: ObservableObject {
     }
     
     // MARK: - 同期処理
+
+    /// 単一のトランザクションをSupabaseから削除
+    /// - Note: ローカル側の削除（SwiftData）は呼び出し元で既に行われている前提
+    func deleteTransactionFromSupabase(_ transaction: Transaction) async {
+        guard let supabase = supabase else {
+            print("⚠️ Supabase client is not configured. Skipping remote delete.")
+            return
+        }
+        guard let authManager = authManager, authManager.isSignedIn else {
+            print("⚠️ Not signed in. Skipping remote delete for transaction id=\(transaction.idString)")
+            return
+        }
+        // idString が空の場合はSupabase側のIDが分からないのでスキップ
+        guard !transaction.idString.isEmpty else {
+            print("⚠️ Transaction idString is empty. Skipping remote delete.")
+            return
+        }
+        
+        do {
+            try await supabase
+                .from("transactions")
+                .delete()
+                .eq("id", value: transaction.idString)
+                .execute()
+            print("✅ Deleted transaction from Supabase. id=\(transaction.idString)")
+        } catch {
+            print("❌ Failed to delete transaction from Supabase: \(error)")
+        }
+    }
     
     /// 手動同期（双方向）
     /// - Parameter forceFullSync: trueの場合、最終同期日時を無視して全データを取得（他端末からの初回ログイン時など）
