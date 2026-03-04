@@ -112,10 +112,25 @@ struct HomeView: View {
                         
                         // Monthly overview with paging and centered current month.
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Monthly Overview")
-                                .font(.title2)
-                                .bold()
-                                .padding(.horizontal)
+                            HStack {
+                                Text("Monthly Overview")
+                                    .font(.title2)
+                                    .bold()
+                                
+                                Spacer()
+                                
+                                if !monthlyTotals.isEmpty {
+                                    Picker("", selection: $selectedMonthIndex) {
+                                        ForEach(Array(monthlyTotals.indices), id: \.self) { index in
+                                            Text(Self.monthFormatter.string(from: monthlyTotals[index].month))
+                                                .tag(index)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .labelsHidden()
+                                }
+                            }
+                            .padding(.horizontal)
                             
                             if !monthlyTotals.isEmpty {
                                 TabView(selection: $selectedMonthIndex) {
@@ -258,6 +273,10 @@ struct HomeView: View {
                                                 .fill(Color(UIColor.secondarySystemBackground).opacity(0.9))
                                         )
                                     }
+                                    
+                                    // Native ad below payment methods
+                                    NativeAdViewContainer()
+                                        .padding(.top, 12)
                                 }
                                 .padding(.horizontal, 8)
                             }
