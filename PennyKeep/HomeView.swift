@@ -12,6 +12,7 @@ struct HomeView: View {
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var appSettings: AppSettings
     @State private var selectedMonthIndex: Int = 0
+    @State private var cachedMonthlyTotals: [(month: Date, income: Double, expense: Double)] = []
     
     
     var currentMonthTransactions: [Transaction] {
@@ -72,10 +73,14 @@ struct HomeView: View {
     
     
     
-    // Computed array of totals for the last 12 months
+    // Computed array of totals for the last 12 months (from cache)
     private var monthlyTotals: [(month: Date, income: Double, expense: Double)] {
+        cachedMonthlyTotals
+    }
+
+    private func recalculateMonthlyTotals() {
         let calendar = Calendar.current
-        return (0..<12).compactMap { offset in
+        let newTotals: [(month: Date, income: Double, expense: Double)] = (0..<12).compactMap { offset in
             guard let date = calendar.date(byAdding: .month, value: -offset, to: Date()) else { return nil }
             let transactions = transactionStore.transactions.filter {
                 calendar.isDate($0.date, equalTo: date, toGranularity: .month)
@@ -84,6 +89,7 @@ struct HomeView: View {
             let expense = transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
             return (month: date, income: income, expense: expense)
         }.reversed()
+        cachedMonthlyTotals = newTotals
     }
     
     // Formatter to display month and year
@@ -243,6 +249,9 @@ struct HomeView: View {
                                         .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
                                 )
                                 .padding(.horizontal, 16)
+                                .transaction { transaction in
+                                    transaction.animation = nil
+                                }
                                 
                                 // List of payment methods
                                 VStack(spacing: 8) {
@@ -278,6 +287,7 @@ struct HomeView: View {
                                     NativeAdViewContainer()
                                         .padding(.top, 12)
                                 }
+                                .animation(.none, value: selectedMonthIndex)
                                 .padding(.horizontal, 8)
                             }
                             .padding(.vertical, 8)
@@ -337,13 +347,16 @@ struct HomeView: View {
                                 }
                             }
                         }
+                        .animation(.none, value: selectedMonthIndex)
                         .padding(.vertical)
                     }
                 }
                 .navigationTitle("Home")
                 .onAppear {
+                    recalculateMonthlyTotals()
                     if !monthlyTotals.isEmpty {
-                        selectedMonthIndex = monthlyTotals.count - 1
+                        let lastIndex = monthlyTotals.count - 1
+                        selectedMonthIndex = lastIndex
                     }
                 }
             }
