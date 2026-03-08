@@ -49,9 +49,7 @@ struct TransactionsView: View {
                     Spacer()
                 } else {
                     List {
-                        ForEach(filteredTransactions.indices, id: \.self) { index in
-                            let transaction = filteredTransactions[index]
-                            
+                        ForEach(filteredTransactions) { transaction in
                             TransactionRow(transaction: transaction, onEdit: {
                                 activeSheet = .edit(transaction)
                             })

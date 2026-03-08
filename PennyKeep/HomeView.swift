@@ -11,11 +11,18 @@ struct PaymentMethodData: Identifiable {
 struct HomeView: View {
     @EnvironmentObject var transactionStore: TransactionStore
     @EnvironmentObject var appSettings: AppSettings
+    @State private var selectedMonthIndex: Int = 0
+    @State private var cachedMonthlyTotals: [(month: Date, income: Double, expense: Double)] = []
     
     
     var currentMonthTransactions: [Transaction] {
-        transactionStore.transactions.filter {
-            Calendar.current.isDate($0.date, equalTo: Date(), toGranularity: .month)
+        let calendar = Calendar.current
+        let selectedMonth = monthlyTotals.indices.contains(selectedMonthIndex)
+        ? monthlyTotals[selectedMonthIndex].month
+        : Date()
+        
+        return transactionStore.transactions.filter {
+            calendar.isDate($0.date, equalTo: selectedMonth, toGranularity: .month)
         }
     }
     
@@ -56,17 +63,24 @@ struct HomeView: View {
     
     var recentTransactions: [Transaction] {
         let calendar = Calendar.current
+        let selectedMonth = monthlyTotals.indices.contains(selectedMonthIndex)
+        ? monthlyTotals[selectedMonthIndex].month
+        : Date()
         return transactionStore.transactions
-            .filter { calendar.isDate($0.date, equalTo: Date(), toGranularity: .month) }
+            .filter { calendar.isDate($0.date, equalTo: selectedMonth, toGranularity: .month) }
             .sorted { $0.date > $1.date }
     }
-
     
-
-    // Computed array of totals for the last 12 months
+    
+    
+    // Computed array of totals for the last 12 months (from cache)
     private var monthlyTotals: [(month: Date, income: Double, expense: Double)] {
+        cachedMonthlyTotals
+    }
+
+    private func recalculateMonthlyTotals() {
         let calendar = Calendar.current
-        return (0..<12).compactMap { offset in
+        let newTotals: [(month: Date, income: Double, expense: Double)] = (0..<12).compactMap { offset in
             guard let date = calendar.date(byAdding: .month, value: -offset, to: Date()) else { return nil }
             let transactions = transactionStore.transactions.filter {
                 calendar.isDate($0.date, equalTo: date, toGranularity: .month)
@@ -75,8 +89,9 @@ struct HomeView: View {
             let expense = transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
             return (month: date, income: income, expense: expense)
         }.reversed()
+        cachedMonthlyTotals = newTotals
     }
-
+    
     // Formatter to display month and year
     private static let monthFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -87,132 +102,264 @@ struct HomeView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    
-                    // Monthly Totals section.
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 16) {
-                            ForEach(monthlyTotals, id: \.month) { total in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(Self.monthFormatter.string(from: total.month))
-                                        .font(.headline)
-                                    Text(total.income, format: .currency(code: appSettings.selectedCurrency))
-                                        .foregroundColor(.green)
-                                    Text(total.expense, format: .currency(code: appSettings.selectedCurrency))
-                                        .foregroundColor(.red)
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color.accentColor.opacity(0.15),
+                        Color(UIColor.systemBackground)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        
+                        // Monthly overview with paging and centered current month.
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Monthly Overview")
+                                    .font(.title2)
+                                    .bold()
+                                
+                                Spacer()
+                                
+                                if !monthlyTotals.isEmpty {
+                                    Picker("", selection: $selectedMonthIndex) {
+                                        ForEach(Array(monthlyTotals.indices), id: \.self) { index in
+                                            Text(Self.monthFormatter.string(from: monthlyTotals[index].month))
+                                                .tag(index)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .labelsHidden()
                                 }
-                                .padding()
-                                .background(Color(UIColor.secondarySystemBackground))
-                                .cornerRadius(8)
+                            }
+                            .padding(.horizontal)
+                            
+                            if !monthlyTotals.isEmpty {
+                                TabView(selection: $selectedMonthIndex) {
+                                    ForEach(Array(monthlyTotals.indices), id: \.self) { index in
+                                        let total = monthlyTotals[index]
+                                        let net = total.income - total.expense
+                                        
+                                        VStack {
+                                            VStack(alignment: .leading, spacing: 12) {
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 4) {
+                                                        Text(Self.monthFormatter.string(from: total.month))
+                                                            .font(.headline)
+                                                            .foregroundColor(.secondary)
+                                                        Text("Net Balance")
+                                                            .font(.caption)
+                                                            .foregroundColor(.secondary)
+                                                        Text(net, format: .currency(code: appSettings.selectedCurrency))
+                                                            .font(.title2.bold())
+                                                            .foregroundColor(net >= 0 ? .green : .red)
+                                                    }
+                                                    Spacer()
+                                                }
+                                                
+                                                HStack(spacing: 16) {
+                                                    VStack(alignment: .leading, spacing: 4) {
+                                                        Text("Income")
+                                                            .font(.caption)
+                                                            .foregroundColor(.secondary)
+                                                        Text(total.income, format: .currency(code: appSettings.selectedCurrency))
+                                                            .font(.headline)
+                                                            .foregroundColor(.green)
+                                                    }
+                                                    
+                                                    VStack(alignment: .leading, spacing: 4) {
+                                                        Text("Expense")
+                                                            .font(.caption)
+                                                            .foregroundColor(.secondary)
+                                                        Text(total.expense, format: .currency(code: appSettings.selectedCurrency))
+                                                            .font(.headline)
+                                                            .foregroundColor(.red)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                }
+                                            }
+                                            .padding()
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                                    .fill(.ultraThinMaterial)
+                                                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 6)
+                                            )
+                                            .padding(.horizontal, 24)
+                                            
+                                            // Extra space below card so dots don't overlap
+                                            Spacer(minLength: 24)
+                                        }
+                                        .tag(index)
+                                    }
+                                }
+                                .tabViewStyle(.page(indexDisplayMode: .never))
+                                .frame(height: 210)
+                                
+                                // Custom page indicator with its own background
+                                HStack(spacing: 6) {
+                                    ForEach(Array(monthlyTotals.indices), id: \.self) { index in
+                                        Circle()
+                                            .fill(index == selectedMonthIndex ? Color.accentColor : Color.secondary.opacity(0.4))
+                                            .frame(width: index == selectedMonthIndex ? 8 : 6,
+                                                   height: index == selectedMonthIndex ? 8 : 6)
+                                    }
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(.ultraThinMaterial)
+                                        .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 2)
+                                )
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.top, -8)
                             }
                         }
-                        .padding(.horizontal)
-                    }
-                    
-                    // Payment Method Breakdown section
-                    if !paymentMethodData.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Payment Methods")
+                        
+                        // Payment Method Breakdown section
+                        if !paymentMethodData.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Payment Methods")
+                                    .font(.title2)
+                                    .bold()
+                                    .padding(.horizontal)
+                                
+                                // Chart
+                                Chart(paymentMethodData) { item in
+                                    SectorMark(
+                                        angle: .value("Amount", item.amount),
+                                        innerRadius: .ratio(0.5),
+                                        angularInset: 2
+                                    )
+                                    .cornerRadius(5)
+                                    .foregroundStyle(by: .value("Method", item.paymentMethod.displayName))
+                                }
+                                .frame(height: 200)
+                                .chartLegend(alignment: .center, spacing: 12)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .fill(.ultraThinMaterial)
+                                        .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+                                )
+                                .padding(.horizontal, 16)
+                                .transaction { transaction in
+                                    transaction.animation = nil
+                                }
+                                
+                                // List of payment methods
+                                VStack(spacing: 8) {
+                                    ForEach(paymentMethodData) { item in
+                                        HStack {
+                                            Image(systemName: item.paymentMethod.iconName)
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.accentColor)
+                                                .frame(width: 30)
+                                            
+                                            Text(item.paymentMethod.displayName)
+                                                .font(.body)
+                                            
+                                            Spacer()
+                                            
+                                            VStack(alignment: .trailing, spacing: 2) {
+                                                Text(item.amount, format: .currency(code: appSettings.selectedCurrency))
+                                                    .font(.headline)
+                                                Text("\(item.percentage, specifier: "%.1f")%")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .fill(Color(UIColor.secondarySystemBackground).opacity(0.9))
+                                        )
+                                    }
+                                    
+                                    // Native ad below payment methods
+                                    NativeAdViewContainer()
+                                        .padding(.top, 12)
+                                }
+                                .animation(.none, value: selectedMonthIndex)
+                                .padding(.horizontal, 8)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        
+                        // Recent Transactions List
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Recent Transactions")
                                 .font(.title2)
                                 .bold()
                                 .padding(.horizontal)
                             
-                            // Chart
-                            Chart(paymentMethodData) { item in
-                                SectorMark(
-                                    angle: .value("Amount", item.amount),
-                                    innerRadius: .ratio(0.5),
-                                    angularInset: 2
-                                )
-                                .cornerRadius(5)
-                                .foregroundStyle(by: .value("Method", item.paymentMethod.displayName))
-                            }
-                            .frame(height: 200)
-                            .chartLegend(alignment: .center, spacing: 12)
-                            .padding()
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .cornerRadius(12)
-                            .padding(.horizontal)
-                            
-                            // List of payment methods
-                            VStack(spacing: 8) {
-                                ForEach(paymentMethodData) { item in
-                                    HStack {
-                                        Image(systemName: item.paymentMethod.iconName)
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.accentColor)
-                                            .frame(width: 30)
+                            if recentTransactions.isEmpty {
+                                Text("No recent transactions")
+                                    .foregroundColor(.secondary)
+                                    .padding(.vertical, 32)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                            .fill(.ultraThinMaterial)
+                                    )
+                                    .padding(.horizontal, 24)
+                            } else {
+                                ForEach(recentTransactions) { transaction in
+                                    HStack(spacing: 16) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.accentColor.opacity(0.15))
+                                                .frame(width: 40, height: 40)
+                                            Image(systemName: transaction.type == .income ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
+                                                .foregroundColor(transaction.type == .income ? .green : .red)
+                                        }
                                         
-                                        Text(item.paymentMethod.displayName)
-                                            .font(.body)
-                                        
-                                        Spacer()
-                                        
-                                        VStack(alignment: .trailing, spacing: 2) {
-                                            Text(item.amount, format: .currency(code: appSettings.selectedCurrency))
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(transaction.title)
                                                 .font(.headline)
-                                            Text("\(item.percentage, specifier: "%.1f")%")
+                                            Text(transaction.category)
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                            Text(transaction.date, style: .date)
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
                                         }
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(Color(UIColor.secondarySystemBackground))
-                                    .cornerRadius(8)
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                        .padding(.vertical, 8)
-                    }
-                    
-                    // Recent Transactions List
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Recent Transactions")
-                            .font(.title2)
-                            .bold()
-                            .padding(.horizontal)
-
-                        if recentTransactions.isEmpty {
-                            Text("No recent transactions")
-                                .foregroundColor(.secondary)
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .background(Color(UIColor.secondarySystemBackground))
-                                .cornerRadius(8)
-                                .padding(.horizontal)
-                        } else {
-                            ForEach(recentTransactions) { transaction in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(transaction.title)
+                                        Spacer()
+                                        let formattedAmount = transaction.amount.formatted(.currency(code: appSettings.selectedCurrency))
+                                        Text("\(transaction.type == .income ? "+" : "-")\(formattedAmount)")
                                             .font(.headline)
-                                        Text(transaction.category)
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                        Text(transaction.date, style: .date)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(transaction.type == .income ? .green : .red)
                                     }
-                                    Spacer()
-                                    let formattedAmount = transaction.amount.formatted(.currency(code: appSettings.selectedCurrency))
-                                    Text("\(transaction.type == .income ? "+" : "-")\(formattedAmount)")
-                                        .font(.headline)
-                                        .foregroundColor(transaction.type == .income ? .green : .red)
+                                    .padding()
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                            .fill(Color(UIColor.secondarySystemBackground).opacity(0.95))
+                                            .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 3)
+                                    )
+                                    .padding(.horizontal, 16)
                                 }
-                                .padding()
-                                .background(Color(UIColor.secondarySystemBackground))
-                                .cornerRadius(8)
-                                .padding(.horizontal)
                             }
                         }
+                        .animation(.none, value: selectedMonthIndex)
+                        .padding(.vertical)
                     }
-                    .padding(.vertical)
+                }
+                .navigationTitle("Home")
+                .onAppear {
+                    recalculateMonthlyTotals()
+                    if !monthlyTotals.isEmpty {
+                        let lastIndex = monthlyTotals.count - 1
+                        selectedMonthIndex = lastIndex
+                    }
                 }
             }
-            .navigationTitle("Home")
         }
     }
 }
