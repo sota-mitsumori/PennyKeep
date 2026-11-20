@@ -20,12 +20,13 @@ struct EnvironmentProcessor {
         request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
         let body: [String: Any] = [
-            "model": "gpt-4.1-nano",
+            "model": "gpt-6-luna",
             "messages": [
                 ["role": "user", "content": prompt]
             ],
-            "max_tokens": 50,
-            "temperature": 0.0
+            "max_completion_tokens": 500,
+            "reasoning_effort": "low",
+            "response_format": ["type": "json_object"]
         ]
         
         do {
