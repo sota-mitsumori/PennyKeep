@@ -4,7 +4,7 @@ import Foundation
 struct EnvironmentProcessor {
     static func processReceiptText(_ fullText: String, completion: @escaping (String, String, Date) -> Void) {
         print("All pages processed. Full recognized text:\n\(fullText)")
-        let prompt = "Extract the receipt title, total amount and the date of the receipt from the following receipt text. Title should be the name of the place item was purchased. Return the result as a JSON object with keys \"title\", \"amount\", and \"date\". Date should be return in yyyy-mm-dd format. Do not place a comma for amount. Receipt text:\n\n\(fullText)"
+        let prompt = "Extract the receipt title, total amount and the date of the receipt from the following receipt text. Title should be the name of the store where the items were purchased, including the branch name if the receipt shows one (e.g. \"7-Eleven Shibuya Station Store\", not just \"7-Eleven\"). The branch name is often on a separate line near the store name, usually ending in a word meaning \"store\" or \"branch\" in the receipt's language. Join the store name and branch name with a single space, and keep them in the language written on the receipt (do not translate). Do not include addresses, phone numbers or company legal suffixes (e.g. Inc., Co., Ltd., or their equivalents in the receipt's language). Return the result as a JSON object with keys \"title\", \"amount\", and \"date\". Date should be return in yyyy-mm-dd format. Do not place a comma for amount. Receipt text:\n\n\(fullText)"
         print("Open AI prompt:\n\(prompt)")
         
         guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
