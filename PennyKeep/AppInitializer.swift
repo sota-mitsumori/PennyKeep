@@ -16,12 +16,14 @@ struct AppInitializer: View {
         self.modelContainer = modelContainer
     }
     
-    @State private var showAuthView = false
+    @State private var showOnboarding = false
     @State private var hasCheckedInitialSync = false
-    
-    // UserDefaultsキー: 初回ログインシート表示フラグ
-    private let hasShownInitialAuthSheetKey = "hasShownInitialAuthSheet"
-    
+
+    // Whether the first-launch onboarding has been completed
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    // Legacy flag from the old first-launch auth sheet; users who saw it skip onboarding
+    @AppStorage("hasShownInitialAuthSheet") private var hasShownInitialAuthSheet = false
+
     var body: some View {
         Group {
             if isInitialized {
@@ -32,13 +34,12 @@ struct AppInitializer: View {
                     .environmentObject(syncManager)
                     .environmentObject(authManager)
                     .onAppear {
-                        // Show auth view if not signed in (only once, first time app is opened)
-                        let hasShownBefore = UserDefaults.standard.bool(forKey: hasShownInitialAuthSheetKey)
-                        if !authManager.isSignedIn && !hasShownBefore && !showAuthView {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                showAuthView = true
-                                UserDefaults.standard.set(true, forKey: hasShownInitialAuthSheetKey)
-                            }
+                        // Existing users (saw the old auth sheet or already signed in) skip onboarding
+                        if hasShownInitialAuthSheet || authManager.isSignedIn {
+                            hasCompletedOnboarding = true
+                        }
+                        if !hasCompletedOnboarding {
+                            showOnboarding = true
                         }
                         
                         // Check if user is already signed in on app launch and sync
@@ -65,14 +66,13 @@ struct AppInitializer: View {
                             }
                         }
                     }
-                    .sheet(isPresented: $showAuthView) {
-                        BeautifulAuthView()
-                            .environmentObject(authManager)
-                            .environmentObject(appSettings)
-                            .onDisappear {
-                                // Mark as shown so it doesn't appear again
-                                showAuthView = false
-                            }
+                    .fullScreenCover(isPresented: $showOnboarding) {
+                        OnboardingView {
+                            hasCompletedOnboarding = true
+                            showOnboarding = false
+                        }
+                        .environmentObject(authManager)
+                        .environmentObject(appSettings)
                     }
             } else {
                 ProgressView("Loading...")

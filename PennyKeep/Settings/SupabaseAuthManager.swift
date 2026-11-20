@@ -86,7 +86,9 @@ class SupabaseAuthManager: NSObject, ObservableObject {
     // MARK: - メール/パスワード認証
     
     /// メール/パスワードでアカウント作成
-    func signUp(email: String, password: String, fullName: PersonNameComponents?) async throws {
+    /// - Returns: `true` if a session was created (signed in immediately), `false` if email confirmation is pending.
+    @discardableResult
+    func signUp(email: String, password: String, fullName: PersonNameComponents?) async throws -> Bool {
         guard let supabase = supabase else {
             throw AuthError.supabaseNotConfigured
         }
@@ -119,6 +121,7 @@ class SupabaseAuthManager: NSObject, ObservableObject {
                 }
                 isLoading = false
             }
+            return response.session != nil
         } catch {
             let errorMessage = parseAuthError(error)
             await MainActor.run {

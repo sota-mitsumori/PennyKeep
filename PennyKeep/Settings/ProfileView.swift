@@ -37,9 +37,8 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showAuthView) {
-                BeautifulAuthView()
+                AuthView(mode: .signIn)
                     .environmentObject(authManager)
-                    .environmentObject(appSettings)
             }
         }
     }
