@@ -40,13 +40,15 @@ struct TransactionsView: View {
                 // Calendar at the top for date selection.
                 DatePicker("Select Date", selection: $selectedDate, displayedComponents: .date)
                     .datePickerStyle(GraphicalDatePickerStyle())
+                    // Pin the calendar to its ideal height so it doesn't resize
+                    // when the content below switches between empty state and List.
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding([.horizontal, .top])
-                
+
                 if filteredTransactions.isEmpty {
-                    Spacer()
                     Text("No transactions for this day")
                         .foregroundColor(.gray)
-                    Spacer()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
                         ForEach(filteredTransactions) { transaction in
